@@ -1,0 +1,308 @@
+/* ─────────────────────────────────────────────────────────────────────
+   vertcut · components.css
+   Подключать ПОСЛЕ tokens.css. Голых чисел здесь нет — только токены.
+
+   Названия классов даны как ориентир: в целевом коде используйте свои
+   компоненты и свои соглашения, важны значения и правила поведения.
+   ───────────────────────────────────────────────────────────────────── */
+
+/* ── Основание ───────────────────────────────────────────────────────── */
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: 400 var(--t-base) / var(--lh) var(--sans);
+  -webkit-font-smoothing: antialiased;
+}
+*, *::before, *::after { box-sizing: border-box; }
+::selection { background: #f2d9cb; }
+
+a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+a:hover { color: #8f3f20; }
+
+/* Все числа — табличными цифрами. */
+.vc-num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+/* Заголовок экрана. Serif + отрицательный трекинг; курсив — для
+   смысловой второй половины фразы, не для украшения. */
+.vc-h1 {
+  margin: 0;
+  font: 400 var(--t-h1) / var(--lh-head) var(--serif);
+  letter-spacing: var(--ls-head);
+}
+.vc-h1 em { font-style: italic; color: var(--ink-3); }
+
+/* Лид под заголовком: одна строка, что делать на экране. */
+.vc-lede { margin: 0; font-size: var(--t-lg); color: var(--ink-2); max-width: var(--measure); }
+
+/* Метка блока в колонке: моно, uppercase, разрядка. */
+.vc-block-label {
+  font: 400 var(--t-xs) / 1 var(--mono);
+  letter-spacing: var(--ls-caps);
+  text-transform: uppercase;
+  color: var(--ink-4);
+}
+
+/* ── Каркас экрана ───────────────────────────────────────────────────── */
+
+.vc-shell { display: flex; min-height: 100vh; background: var(--paper); }
+
+.vc-rail {
+  width: var(--rail-w); flex: 0 0 var(--rail-w);
+  background: var(--surface); border-right: 1px solid var(--line);
+  padding: 20px 18px;
+  display: flex; flex-direction: column; gap: var(--sp-4);
+}
+
+.vc-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.vc-main__body { flex: 1; min-width: 0; padding: 30px 36px; display: flex; flex-direction: column; gap: 18px; }
+
+/* Футбар: ОДНО главное действие на экран. Если оно погашено — рядом
+   написана причина, до клика, а не после. */
+.vc-footbar {
+  height: var(--footbar-h); flex: 0 0 var(--footbar-h);
+  border-top: 1px solid var(--line); background: var(--surface);
+  display: flex; align-items: center; gap: var(--sp-3); padding: 0 36px;
+}
+.vc-footbar__why { font-size: var(--t-md); color: var(--ink-2); }
+.vc-footbar__spacer { flex: 1; }
+
+/* Полоса второго уровня (редактор субтитров, настройки). */
+.vc-topbar {
+  height: var(--topbar-h); flex: 0 0 var(--topbar-h);
+  border-bottom: 1px solid var(--line); background: var(--surface);
+  display: flex; align-items: center; gap: 14px; padding: 0 var(--sp-4);
+}
+
+/* ── Маршрут в колонке ───────────────────────────────────────────────── */
+/* Шаги — путь, а не меню: номер serif-курсивом, справа состояние. */
+
+.vc-step {
+  display: flex; align-items: center; gap: 10px;
+  padding: var(--sp-2) 10px; border: 0; border-radius: var(--r-ctl);
+  background: none; cursor: pointer; text-align: left;
+  font: 400 var(--t-base) / var(--lh-tight) var(--sans); color: var(--ink);
+}
+.vc-step__n { width: 14px; font: italic 400 var(--t-base) var(--serif); color: var(--ink-3); }
+.vc-step:hover { background: #f5f2e8; }
+.vc-step[aria-current="step"] {
+  background: var(--accent-bg); color: var(--accent-ink); font-weight: 500;
+  border-left: 2px solid var(--accent); border-radius: 0 var(--r-ctl) var(--r-ctl) 0;
+}
+.vc-step[data-state="done"] .vc-step__n { color: var(--good-ink); }
+.vc-step[disabled] { color: var(--ink-off); cursor: not-allowed; }
+.vc-step__state { margin-left: auto; font-size: var(--t-sm); }
+
+/* Строка списка вертикалок: настоящий кадр 9:16, а не иконка. */
+.vc-rail-row { display: flex; gap: 9px; align-items: center; padding: 6px; border: 0; border-radius: var(--r-ctl); background: none; cursor: pointer; text-align: left; }
+.vc-rail-row:hover { background: #f5f2e8; }
+.vc-rail-row__thumb { width: 26px; height: 46px; flex: 0 0 26px; border-radius: 3px; }
+.vc-rail-row__title { display: block; font: 500 var(--t-md) / 1.25 var(--sans); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.vc-rail-row__meta { font: 400 var(--t-xs) / 1.3 var(--mono); color: var(--ink-3); }
+.vc-rail-row[aria-current="true"] { background: var(--accent-bg); border-left: 2px solid var(--accent); border-radius: 0 var(--r-ctl) var(--r-ctl) 0; }
+
+/* ── Кнопки ──────────────────────────────────────────────────────────── */
+
+.vc-btn {
+  font: 500 var(--t-base) / 1 var(--sans);
+  height: var(--ctl-h); padding: 0 20px;
+  border-radius: var(--r-ctl); border: 1px solid var(--line-strong);
+  background: var(--surface); color: var(--ink); cursor: pointer;
+}
+.vc-btn:hover { background: #f7f4ea; border-color: #c4bda8; }
+.vc-btn--sm { height: var(--ctl-h-sm); padding: 0 14px; font-size: var(--t-md); }
+.vc-btn--xs { height: var(--ctl-h-xs); padding: 0 12px; font-size: 13px; }
+
+/* Главная. Одна на экран. */
+.vc-btn--primary {
+  padding: 0 var(--ctl-px);
+  border-color: var(--accent-line); background: var(--accent); color: var(--surface);
+}
+.vc-btn--primary:hover { background: var(--accent-line); }
+.vc-btn--primary[disabled],
+.vc-btn[disabled] {
+  background: var(--disabled-bg); border-color: var(--disabled-line);
+  color: var(--disabled-ink); cursor: not-allowed;
+}
+
+/* Опасная: рамка и текст, без заливки. */
+.vc-btn--danger { border-color: var(--bad-line); background: var(--surface); color: var(--bad-ink); }
+.vc-btn--danger:hover { background: var(--bad-bg); }
+
+/* Ссылка-кнопка: второстепенные и опасные действия в футбаре. */
+.vc-link {
+  font: 500 var(--t-md) / 1 var(--sans);
+  border: 0; background: none; padding: 0; cursor: pointer;
+  color: var(--accent); text-decoration: underline; text-underline-offset: 3px;
+}
+.vc-link--muted { color: var(--ink-2); }
+.vc-link--danger { color: var(--bad-ink); }
+
+/* Сегменты: 2–4 взаимоисключающих коротких значения. */
+.vc-seg { display: flex; border: 1px solid var(--line-strong); border-radius: var(--r-ctl); overflow: hidden; width: fit-content; }
+.vc-seg > button { font: 500 var(--t-md) / 1 var(--sans); height: 34px; padding: 0 14px; border: 0; background: var(--surface); color: var(--ink-2); cursor: pointer; }
+.vc-seg > button + button { border-left: 1px solid var(--line-strong); }
+.vc-seg > button[aria-pressed="true"] { background: var(--ink); color: var(--surface); }
+
+/* ── Поля ввода ──────────────────────────────────────────────────────── */
+
+.vc-field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.vc-field__label { font-size: var(--t-md); color: var(--ink-2); }
+
+.vc-input, .vc-textarea, .vc-select {
+  font: 400 var(--t-lg) / 1.4 var(--sans);
+  border-radius: var(--r-ctl); border: 1px solid var(--line-strong);
+  background: var(--surface); color: var(--ink);
+}
+.vc-input, .vc-select { height: var(--ctl-h); padding: 0 12px; }
+.vc-textarea { padding: 10px 12px; resize: none; }
+.vc-input:focus, .vc-textarea:focus, .vc-select:focus { outline: 2px solid var(--accent); outline-offset: -2px; }
+.vc-input--mono { font-family: var(--mono); font-size: 14.5px; }
+.vc-textarea--prompt { background: var(--surface-alt); font-size: 14.5px; line-height: 1.6; }
+
+input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--accent); }
+input[type="range"] { accent-color: var(--accent); min-width: 0; }
+
+/* Зона перетаскивания вместо системного «Choose file». */
+.vc-drop {
+  border: 1px dashed var(--line-strong); border-radius: var(--r-row);
+  background: var(--surface-alt); padding: 34px;
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  cursor: pointer;
+}
+
+/* ── Карточка ────────────────────────────────────────────────────────── */
+
+.vc-card {
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: var(--r-card); padding: 20px 22px;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.vc-card--tight { padding: 14px 18px; }
+.vc-card--empty { border-style: dashed; align-items: flex-start; padding: 28px; }
+.vc-card__title { font: 600 var(--t-base) / 1 var(--sans); }
+.vc-card__hr { height: 1px; background: var(--line-soft); }
+
+/* Заголовок пустого состояния — serif: это фраза, а не подпись. */
+.vc-empty__title { font: 400 var(--t-xl) / var(--lh-tight) var(--serif); }
+
+/* ── Полоса-сообщение ───────────────────────────────────────────────── */
+/* Опасное и сломанное спрашивает полосой во всю ширину, НЕ модальным
+   окном: окно закрывает собой ровно то, о чём спрашивает.
+   Первая строка — что случилось, вторая — что делать. */
+
+.vc-bar {
+  display: flex; gap: var(--sp-3); align-items: flex-start;
+  border-radius: var(--r-row); padding: 14px 18px;
+}
+.vc-bar__what { display: flex; flex-direction: column; gap: 3px; flex: 1; }
+.vc-bar__what b { font-size: var(--t-base); }
+.vc-bar__what span { font-size: 14px; }
+.vc-bar__acts { display: flex; gap: var(--sp-2); }
+
+.vc-bar--bad  { background: var(--bad-bg);   border: 1px solid var(--bad-line);   border-left: 3px solid var(--bad-ink); }
+.vc-bar--bad  b { color: var(--bad-ink-2); } .vc-bar--bad span { color: var(--bad-ink-3); }
+.vc-bar--warn { background: var(--warn-bg);  border: 1px solid var(--warn-line);  border-left: 3px solid var(--warn-ink); }
+.vc-bar--warn b { color: var(--warn-ink-2); } .vc-bar--warn span { color: var(--warn-ink-3); }
+.vc-bar--ask  { background: var(--accent-bg); border: 1px solid var(--accent-hairline); border-left: 3px solid var(--accent); align-items: center; }
+.vc-bar--ask  b { color: var(--accent-ink); } .vc-bar--ask span { color: var(--accent-ink-2); }
+
+/* ── Метки состояния ────────────────────────────────────────────────── */
+
+.vc-tag {
+  font-size: var(--t-sm); padding: 3px 10px; border-radius: var(--r-pill);
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink-3);
+}
+.vc-tag--good { background: var(--good-bg); border-color: var(--good-line); color: var(--good-ink); }
+.vc-tag--warn { background: var(--warn-bg); border-color: var(--warn-line); color: var(--warn-ink); }
+.vc-tag--dim  { background: var(--sunken);  border-color: var(--line);      color: #6b665c; }
+.vc-tag--bad  { background: var(--bad-bg);  border-color: var(--bad-line);  color: var(--bad-ink); }
+.vc-tag--busy { background: var(--accent-bg); border-color: var(--accent-hairline); color: var(--accent); }
+.vc-tag--off  { border-style: dashed; border-color: var(--line-strong); }
+
+/* ── Список фраз (главный инструмент шага «Фрагменты») ──────────────── */
+
+.vc-list { display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-card); overflow: hidden; }
+.vc-list__head { display: flex; align-items: center; gap: 12px; padding: 12px var(--sp-3); border-bottom: 1px solid var(--line-soft); }
+.vc-list__cols {
+  display: flex; gap: 12px; padding: 7px var(--sp-3);
+  border-bottom: 1px solid var(--line-soft); background: var(--surface-alt);
+  font: 400 var(--t-xs) / 1 var(--mono); letter-spacing: .08em;
+  text-transform: uppercase; color: var(--ink-4);
+}
+.vc-row { display: flex; gap: 12px; padding: 9px var(--sp-3); border-bottom: 1px solid var(--line-row); font-size: 14.5px; color: var(--ink-2); cursor: pointer; }
+.vc-row:hover { background: #f7f4ea; }
+.vc-row__n { width: 34px; font-family: var(--mono); color: var(--ink-4); }
+.vc-row__at, .vc-row__len { font-family: var(--mono); font-size: var(--t-sm); }
+.vc-row__at { width: 58px; } .vc-row__len { width: 46px; }
+.vc-row__text { flex: 1; }
+/* Внутри выбранного диапазона: подложка, акцентные числа, метки
+   «начало» и «конец» на границах. */
+.vc-row[data-in-range] { background: var(--accent-bg-2); border-bottom-color: var(--accent-track); color: var(--ink); }
+.vc-row[data-in-range] .vc-row__n,
+.vc-row[data-in-range] .vc-row__at,
+.vc-row[data-in-range] .vc-row__len { color: var(--accent-ink); }
+.vc-row__edge { font: 400 var(--t-xs) / 1 var(--mono); color: var(--accent); }
+
+/* Свёрнутая середина длинного списка — всегда со словами, сколько
+   спрятано; молчаливый обрез читается как поломка. */
+.vc-fold {
+  display: flex; align-items: center; gap: 10px; padding: 8px var(--sp-3);
+  background: var(--surface-alt); border-bottom: 1px solid var(--line-row);
+  font: 400 11px / 1 var(--mono); color: var(--ink-4);
+}
+.vc-fold::before, .vc-fold::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+
+/* ── Кадры видео ────────────────────────────────────────────────────── */
+
+.vc-frame-source { aspect-ratio: var(--ar-source); border: 1px solid var(--line); border-radius: var(--r-frame); }
+.vc-frame-vertical { aspect-ratio: var(--ar-vertical); border: 1px solid var(--line-strong); border-radius: var(--r-frame); position: relative; overflow: hidden; }
+.vc-shot[aria-selected="true"] { border: 2px solid var(--accent); }
+.vc-dot { width: 7px; height: 7px; border-radius: var(--r-pill); display: inline-block; }
+.vc-dot--face { background: var(--accent); }
+.vc-dot--hand { background: var(--good-ink); }
+.vc-dot--cut  { background: var(--warn-ink); }
+
+/* Прогресс: только там, где процент правда известен. */
+.vc-progress { height: 4px; border-radius: var(--r-pill); background: var(--accent-track); overflow: hidden; }
+.vc-progress > i { display: block; height: 100%; background: var(--accent); }
+
+/* ── Субтитр в кадре ────────────────────────────────────────────────── */
+/* Обводка рисуется четырьмя тенями, а не -webkit-text-stroke: она
+   одинаково выглядит в браузере и в кадре, который рендерит бэкенд. */
+
+.vc-sub {
+  position: absolute; left: 0; right: 0; bottom: var(--sub-bottom);
+  padding: 0 var(--sub-side); text-align: center;
+  display: flex; flex-direction: column; gap: 2px;
+}
+.vc-sub__line {
+  font: var(--sub-weight) var(--sub-size) / var(--sub-line) var(--sub-font);
+  color: var(--sub-color);
+  text-shadow:
+     var(--sub-stroke-w)  var(--sub-stroke-w) 0 var(--sub-stroke),
+    calc(-1 * var(--sub-stroke-w))  var(--sub-stroke-w) 0 var(--sub-stroke),
+     var(--sub-stroke-w) calc(-1 * var(--sub-stroke-w)) 0 var(--sub-stroke),
+    calc(-1 * var(--sub-stroke-w)) calc(-1 * var(--sub-stroke-w)) 0 var(--sub-stroke);
+}
+.vc-sub__word--active { color: var(--sub-karaoke); }   /* караоке: цветом  */
+.vc-sub--plate .vc-sub__line { background: rgba(26,25,23,.72); text-shadow: none; padding: 2px 10px; }
+
+/* Опасные зоны площадок в редакторе: пунктир, не заливка. */
+.vc-safe-top, .vc-safe-bottom { position: absolute; left: 0; right: 0; }
+.vc-safe-top { top: 0; height: var(--sub-safe-top); border-bottom: 1px dashed rgba(255,253,248,.55); }
+.vc-safe-bottom { bottom: 0; height: var(--sub-safe-bottom); border-top: 1px dashed rgba(255,253,248,.55); }
+
+/* ── Телефон ─────────────────────────────────────────────────────────── */
+
+@media (max-width: 720px) {
+  /* Колонка маршрута превращается в полосу снизу; на телефоне не режут,
+     а смотрят готовое и правят текст. */
+  .vc-shell { flex-direction: column; }
+  .vc-rail { width: auto; flex: none; order: 2; flex-direction: row; border-right: 0; border-top: 1px solid var(--line); padding: 0; height: 64px; }
+  .vc-main__body { padding: var(--sp-3) 14px; }
+  .vc-footbar { padding: 14px 18px; height: auto; }
+  .vc-btn, .vc-btn--primary { height: 48px; }
+  .vc-link { min-height: var(--tap-min); }
+}

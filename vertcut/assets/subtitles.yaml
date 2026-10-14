@@ -1,0 +1,480 @@
+# Subtitle style: the default.
+#
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# THIS IS NOT YOUR STYLE. It's a starting point.
+#
+# The numbers were measured on a real vertical clip from one channel.
+# They aren't made up: each one below says how it was measured. But it
+# is one channel's taste: a light grey box, black text, letters 4% of
+# the frame width.
+#
+# Change them as you like — in the subtitle editor on screen, or here.
+#
+# Two settings are not about taste, so change them with care:
+#   safe_zones.side — the platform's icon column sits under it;
+#   lines.max       — more than two lines on screen is hard to read.
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+#
+# All sizes are FRACTIONS of the frame, not pixels. If a frame is ever
+# not 1080×1920, fractions still work. Pixels at 1080×1920 are given
+# next to each number, so you can picture it.
+
+# Which version of this file it is. Vertcut uses it to tell an old
+# style file from a current one. Don't change it.
+version: 1
+
+
+# ─────────────────────────────────────────────────────────────────────
+# Font
+# ─────────────────────────────────────────────────────────────────────
+#
+# Inter Tight, a free font under the SIL Open Font License — it may be
+# shipped with anything. The file comes from Google Fonts; its license
+# is next to it (`InterTight-OFL.txt`).
+#
+# Why this one: it was picked by measurement. Thirteen lines from
+# a real clip were drawn with every font on the system, and Inter Tight
+# matched all thirteen widths with one scale factor, within 0.61%. It's
+# also free, easy to read, and covers Latin and Cyrillic.
+#
+# To use your own font, add it in the subtitle editor (Add font file…)
+# — Vertcut keeps a copy, and its file name goes here. `vertcut fonts`
+# lists every font you can use. Paid fonts usually can't be shared, so
+# none are shipped.
+font: InterTight.ttf
+
+# Font weight, for variable fonts. Without it the font is drawn at its
+# default weight (400), and subtitles come out noticeably thinner.
+#
+# A regular (non-variable) font has no weight setting: the file itself
+# is the weight. `vertcut style` tells you so, instead of letting you
+# change a number that does nothing.
+weight: 700
+
+# Letter case: as_typed, all_caps or small_caps.
+#
+# The default is as_typed — what was written is what you see. ALL CAPS
+# reads slower than lowercase, so it isn't chosen for you.
+#
+# Case changes the WIDTH of a line too: capitals are wider, and a phrase
+# that fit on one page may stop fitting. Vertcut accounts for this — it
+# measures the text exactly as it will be drawn.
+case: as_typed
+
+# Size. 0.04167 × 1080 = 45 px.
+#
+# Measured on the reference clip: capital height 34.7 px, x-height
+# 26.3. This font at size 45 and weight 700 gives 33 and 25 — a match
+# within what the reference allows (it was downscaled: one of its
+# pixels is almost two of ours).
+#
+# ORIGIN: one channel, one taste. A second reference clip, from another
+# channel, had 63 — one and a half times bigger. That gap is how much
+# of this is taste rather than a "correct" number.
+size: 0.04167
+
+
+# ─────────────────────────────────────────────────────────────────────
+# Background: what separates the subtitle from the picture
+# ─────────────────────────────────────────────────────────────────────
+#
+# Four kinds, each drawn its own way:
+#
+#   box      — a light rectangle under each line, text on top;
+#   outline  — a line around the letters; the picture shows between them;
+#   shadow   — a shifted copy of the letters under them;
+#   none     — letters only; works on a plain dark picture and nowhere
+#              else.
+#
+# The default is box, because it's the only one that was MEASURED on
+# a real clip. The outline and shadow numbers are not measured — see
+# below.
+#
+# NOTE: background and text color go together. Dark text goes on a box,
+# light text goes with an outline or shadow. Change one and you usually
+# need to change the other. Vertcut checks the contrast and tells you
+# if the text blends into its background; it doesn't fix it for you.
+background: box
+
+
+# ─────────────────────────────────────────────────────────────────────
+# Outline
+# ─────────────────────────────────────────────────────────────────────
+outline:
+  # Outline color. Dark, so that light letters read on a light picture.
+  color: "#000000"
+
+  # Width, as a FRACTION OF THE SIZE, not of the frame: the outline grows
+  # with the letters, not with the screen. 0.06 × 45 = 3 px.
+  #
+  # There's no measured "nice" width — the reference clip used a box,
+  # and "nice" can't be measured. This is a setting, plainly.
+  #
+  # What IS measured is where it goes wrong: the outline grows in every
+  # direction, and once twice its width eats the space between words,
+  # the words run together. Word space of the shipped fonts at size 45:
+  #
+  #             space   words touch at
+  #   Inter      9 px       0.10
+  #   Golos     11          0.12
+  #   Oswald    12          0.13
+  #   Literata   9          0.10
+  #
+  # Checked by eye on real frames at 0.04, 0.06, 0.09 and 0.14: at 0.14
+  # two words read as one, at 0.09 they touch, at 0.04 the outline barely
+  # separates text from a light picture. 0.06 is half the limit of the
+  # narrowest space.
+  #
+  # Also measured, and NOT a limit: from 0.04–0.11 (depends on the font)
+  # the small holes inside letters fill with the outline color. That's
+  # expected — with an outline, small holes should be filled, or letters
+  # look broken on a busy picture.
+  width: 0.06
+
+
+# ─────────────────────────────────────────────────────────────────────
+# Shadow
+# ─────────────────────────────────────────────────────────────────────
+shadow:
+  color: "#000000"
+
+  # How far the copy is shifted right and down, as a fraction of the
+  # size. 0.06 × 45 = 3 px.
+  #
+  # Right and down because that's how light usually falls, so the shadow
+  # doesn't read as a second line. There's one number, not one per
+  # direction: two sliders for one choice would only confuse.
+  #
+  # Not measured either: a shadow is weaker than an outline on a busy
+  # picture. It's here for people who find the outline too heavy.
+  offset: 0.06
+
+
+# ─────────────────────────────────────────────────────────────────────
+# Box
+# ─────────────────────────────────────────────────────────────────────
+#
+# Each line gets its own box, as wide as that line — not one box for
+# the whole phrase.
+box:
+  # Height. 0.04271 × 1920 = 82 px.
+  #
+  # Measured: in the reference clip the box runs from 918 to 1000 for
+  # EVERY line — with capitals or without, with descenders or without.
+  # The height is fixed and doesn't depend on the letters.
+  height: 0.04271
+
+  # Space between the box edge and the text. 0.02037 × 1080 = 22 px.
+  # Measured on thirteen lines: (box width − text width) / 2.
+  side_padding: 0.02037
+
+  # Corner radius. 0.00741 × 1080 = 8 px.
+  radius: 0.00741
+
+  # Color. Measured on four frames, from black to almost white behind
+  # it: always 232/229/233. So the box is SOLID, not see-through white.
+  color: "#E8E5E9"
+
+
+# ─────────────────────────────────────────────────────────────────────
+# Text color
+# ─────────────────────────────────────────────────────────────────────
+#
+# The whole line is on screen from its first frame: words already spoken
+# are black, upcoming words are grey.
+text_color:
+  spoken: "#000000"
+  # Measured from the grey words: 176/170/180 on a 232/229/233 box.
+  upcoming: "#ACA8B0"
+
+
+# ─────────────────────────────────────────────────────────────────────
+# Karaoke: the word being spoken right now
+# ─────────────────────────────────────────────────────────────────────
+#
+# This is NOT the same as text_color above. Text color says "spoken
+# yet or not" and is always on. Karaoke is a second layer on top: it
+# shows which word is being said RIGHT NOW.
+#
+# OFF BY DEFAULT. Out of the box, subtitles look the way they were
+# measured: words darken one by one, nothing more. A yellow word is
+# a matter of taste, so it isn't forced on you.
+karaoke:
+  # What is highlighted:
+  #   none — nothing; only "spoken yet or not" remains;
+  #   word — the word being spoken;
+  #   line — the whole line that word is on.
+  mode: none
+
+  # How it's highlighted:
+  #   color — the word changes color;
+  #   box   — the word gets its own box;
+  #   size  — the word is drawn bigger than the rest.
+  by: color
+
+  # Highlight color: for the word, or for its box.
+  color: "#F2C14E"
+
+  # How much bigger the highlighted word is. Only for "by: size".
+  #
+  # HOW IT WORKS: the line is laid out as if EVERY word were big, and the
+  # others are drawn smaller in their places. Otherwise the line would
+  # shift on every word and shake for the whole clip, and the big word
+  # would stick out of its box.
+  #
+  # The cost: gaps between words grow by the same amount, so fewer words
+  # fit on a line.
+  scale: 1.12
+
+
+# ─────────────────────────────────────────────────────────────────────
+# Lines and pages
+# ─────────────────────────────────────────────────────────────────────
+lines:
+  # Line spacing, as a fraction of the size. 1.222 × 45 = 55 px.
+  #
+  # THE ONLY NUMBER HERE THAT IS NOT MEASURED. The reference clip has no
+  # two-line subtitles — all 2074 frames were checked. This is the
+  # font's own line height. Check it by eye on your first two-line
+  # subtitle.
+  spacing: 1.222
+
+  # No more than two lines on screen. A longer phrase is shown in pages
+  # that turn as it's spoken.
+  max: 2
+
+# ─────────────────────────────────────────────────────────────────────
+# Safe zones
+# ─────────────────────────────────────────────────────────────────────
+#
+# NOT ABOUT TASTE. Platforms draw their own buttons over your clip:
+# icons on the side, caption and buttons at the bottom, the account
+# name and "Follow" at the top. A subtitle under them can't be read.
+#
+# The numbers are NOT OFFICIAL: TikTok, Instagram and YouTube don't
+# publish the size of their interface. People measure it from
+# screenshots, and their numbers differ by up to two times. These are
+# the WORST case of the three platforms. When a platform moves its
+# buttons, change these lines — nothing else needs changing.
+safe_zones:
+  # Keep subtitles inside the safe zones or not.
+  #
+  # ON BY DEFAULT, for a real reason: someone who doesn't know about the
+  # platform icons will place the text nicely in the frame and find the
+  # "Share" button over a word only after publishing.
+  #
+  # Turn it off and Vertcut lets the subtitle go anywhere, silently.
+  enabled: true
+
+  # Margin on the right and left, as a fraction of the frame WIDTH.
+  # 0.1296 × 1080 = 140 px. The icon column is there. This also sets the
+  # widest a line can be: 1080 − 2×140 = 800 px.
+  side: 0.1296
+
+  # Margin at the bottom, as a fraction of the HEIGHT.
+  # 0.2083 × 1920 = 400 px. The caption, buttons and progress bar.
+  bottom: 0.2083
+
+  # Margin at the top, as a fraction of the HEIGHT.
+  # 0.14 × 1920 = 269 px. The account name and "Follow".
+  #
+  # NOT MEASURED: in the reference clip the subtitle sat mid-frame and
+  # never got near the top. Taken from the Vertcut design. Whoever first
+  # puts subtitles at the top will be the one to check it.
+  top: 0.14
+
+  # Where the icon column on the right starts. 0.500 × 1920 = 960, the
+  # exact middle of the frame.
+  #
+  # ONLY THE END CARD USES THIS. A subtitle always sits below the middle,
+  # where the column always is. The end card thumbnail ends above the
+  # middle — above the icons — so warning that it's too close to the
+  # edge there would be a warning about nothing.
+  #
+  # It lives here, not under end_card, because it's a number about the
+  # platform's buttons, and all of those live in one block.
+  #
+  # Measured: on all three platforms the column takes roughly the bottom
+  # forty percent of the frame — avatar, like, comments, share, sound.
+  icons_top: 0.500
+
+
+# ─────────────────────────────────────────────────────────────────────
+# Position
+# ─────────────────────────────────────────────────────────────────────
+#
+# The subtitle grows UP from its bottom: the bottom line always stays
+# in one place, however many lines there are. So the text doesn't jump
+# when a page turns; both reference clips confirm it — one line and two
+# lines end on the same pixel.
+position:
+  # Bottom of the last line, FROM THE BOTTOM OF THE FRAME.
+  # 0.4792 × 1920 = 920 px from the bottom, so the box ends 1000 px from
+  # the top.
+  #
+  # From the bottom, not the top, because that's how it works: the block
+  # grows up, and its bottom is the one thing that doesn't move. It's
+  # also how people think about it: "how high above the bottom".
+  #
+  # Measured: in the reference clip the box sits at 918–1000, so the
+  # middle of the frame (960) is exactly the middle of the box.
+  #
+  # ORIGIN: one channel, one taste. The Vertcut design puts subtitles
+  # much lower — 22% from the bottom. Both are just tastes, and both can
+  # be set.
+  from_bottom: 0.4792
+
+  # The baseline sits 27 px above the bottom of the box. 0.01406 × 1920.
+  baseline_from_bottom: 0.01406
+
+  # BELOW THE SHOT — for shots left horizontal (full frame).
+  #
+  # In the middle, the subtitle would cover such a shot: the shot takes
+  # a third of the frame, and the subtitle would sit right in its center.
+  #
+  # Counted FROM THE BOTTOM OF THE SHOT, not as a fixed number: a shot
+  # that isn't 16:9 has a different height, and the subtitle has to
+  # follow it. There's no separate "from bottom" for this on purpose —
+  # a second slider for the same choice would only confuse.
+  below_shot:
+    # Gap between the bottom of the shot and the top of a one-line
+    # subtitle box. 0.05156 × 1920 = 99 px. Measured on the second
+    # reference clip — the only number taken from it.
+    #
+    # The subtitle still won't go below the safe zone: that limit comes
+    # from safe_zones.bottom, not from a second number here.
+    gap: 0.05156
+
+
+# ─────────────────────────────────────────────────────────────────────
+# End card
+# ─────────────────────────────────────────────────────────────────────
+#
+# The last seconds of the clip show a picture instead of the video:
+# a background, the thumbnail, and a line of text. The sound keeps
+# playing under it to the end — the end card REPLACES the picture, it
+# isn't added on, so the file doesn't get a single frame longer.
+#
+# OFF BY DEFAULT: a new user has no thumbnail, channel or background
+# yet. Turn it on and every clip of this video gets it; leave it off
+# and nothing changes.
+#
+# THE NUMBERS BELOW ARE A STARTING POINT, NOT A MEASUREMENT of your
+# channel. They were measured from one channel's end card: where the
+# thumbnail sits, how big the text is, the gap between them. They're
+# not made up — they're just someone else's.
+end_card:
+  # Show the end card or not.
+  show: false
+
+  # How many seconds of the clip it takes. Counted FROM THE END OF THE
+  # FILE, not from the end of speech: the file is a little longer than
+  # the speech (the sound fades in and out), and counting from the end
+  # of speech would flash the video back for a moment at the very end.
+  #
+  # The clip length check uses it too: a clip must be 15 seconds plus
+  # the end card. Three seconds of end card on a 15-second clip would
+  # leave almost nothing before it. There's no second number for this:
+  # change the duration and the check follows.
+  duration: 3.0
+
+  # Background image: a file name from the backgrounds folder in your
+  # Vertcut settings, or none.
+  #
+  # Works like fonts: you add your own file with a button, Vertcut copies
+  # it, and its name goes here. None is shipped — someone else's picture
+  # can't be.
+  #
+  # none isn't an error: the end card is a solid color (the one below).
+  # Otherwise someone with a thumbnail but no background would get
+  # nothing.
+  image: none
+
+  # End card color when there's no background image. Light, because the
+  # text is black by default. Background and text color go together, the
+  # same way as for subtitles, and Vertcut checks the contrast the same
+  # way.
+  #
+  # Measured: 248/243/247 — almost white with a hint of lilac.
+  color: "#F4F1F4"
+
+  # ─────────────────────────────────────────────────────────────────
+  # Thumbnail
+  # ─────────────────────────────────────────────────────────────────
+  #
+  # One per video, shared by all its clips. It's added on its own, and
+  # adding it doesn't redo the analysis.
+  #
+  # It's FITTED, NOT CROPPED: it's already laid out the way you want,
+  # and cropping to 16:9 could cut off half its title. If it isn't 16:9,
+  # you get margins, but the top edge never moves — so the top margin
+  # is the same on every video.
+  thumbnail:
+    # Margin on the left and right. 0.0512 × 1080 = 55 px.
+    side_margin: 0.0512
+    # Top edge. 0.1622 × 1920 = 312 px.
+    top: 0.1622
+    # Lowest it can go. 0.4471 × 1920 = 858 px. A 16:9 thumbnail at full
+    # width fits exactly; a squarer one hits this limit and gets
+    # narrower.
+    #
+    # Below it is the subtitle area — with the DEFAULT style that's
+    # 863–1000 px, so 5 px are left between them. But the subtitle area
+    # isn't a fixed number: it follows the size, line spacing and number
+    # of lines. If you move the subtitle up, Vertcut tells you how much
+    # the thumbnail now overlaps it — it doesn't quietly move either one.
+    bottom: 0.4471
+
+  # ─────────────────────────────────────────────────────────────────
+  # End card text
+  # ─────────────────────────────────────────────────────────────────
+  #
+  # Breaks into lines ONLY where you break it. There's no automatic
+  # wrapping on purpose: two lines have a rhythm, and wrapping in the
+  # wrong place breaks it. If it doesn't fit, the text gets smaller,
+  # down to min_size; past that you get an error with numbers, not text
+  # running off the edges.
+  text:
+    # The default text, shared by all clips. Text you set for one clip
+    # is stored with that clip (in its cut.json), so changing the
+    # default still reaches every clip that didn't change it.
+    #
+    # A line break is written as \n — the file is edited line by line,
+    # and a real line break would split it.
+    #
+    # This is an example, not your text. Replace it with your own.
+    content: "new video\nout now!"
+
+    # A font from the same set as the subtitles — `vertcut fonts` lists
+    # them, your own included.
+    font: InterTight.ttf
+
+    # Font weight, for variable fonts — same as for subtitles.
+    weight: 700
+
+    # Size. 0.0954 × 1080 = 103 px.
+    #
+    # Measured as 108 on the reference, then lowered to 103 to stay out
+    # of the platform margins: at 108 the longest line left 125 px on
+    # the right, and the icon column takes up to 140.
+    size: 0.0954
+
+    # The text won't get smaller than this — you get an error instead of
+    # text too small to read. 0.060 × 1080 = 65 px: still well above the
+    # subtitle size (45).
+    min_size: 0.060
+
+    # Line spacing, as a fraction of the size. Measured on the reference:
+    # the baselines of two lines are 118 px apart at size 108.
+    line_spacing: 1.09
+
+    # Baseline of the FIRST line. 0.6734 × 1920 = 1293 px. The text grows
+    # DOWN from it.
+    #
+    # It won't go below the safe zone: that limit comes from
+    # safe_zones.bottom, not a second number here. If it doesn't fit,
+    # the text gets smaller.
+    first_baseline: 0.6734
+
+    # Color. Black, for a light background.
+    color: "#000000"

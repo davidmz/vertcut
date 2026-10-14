@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Security problem
+    url: https://github.com/eduard1414ed/vertcut/blob/main/SECURITY.md
+    about: Please don't post security problems publicly. Here's how to report them.

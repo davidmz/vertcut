@@ -1,0 +1,157 @@
+# Выпуск: по метке v* — обе раздачи, суммы, ЧЕРНОВИК выпуска.
+#
+# ЧТО ДЕЛАЕТ. Метка `v0.1.0` (или пробная `v0.1.0-trial.1`):
+#   1. сверяет номер в метке с `pyproject.toml` — номер живёт там одном;
+#   2. собирает раздачу Windows на Windows и раздачу macOS на macOS —
+#      `install/build-release.py`, тот же, что и руками; проверка
+#      распаковкой (и подпись у маковской) входит в сборку;
+#   3. считает SHA-256 и кладёт оба архива и SHA256SUMS.txt в черновик;
+#   4. проверяет виндовую раздачу так, как её получит человек: СКАЧИВАЕТ
+#      из черновика и проходит установку (задание `install` из
+#      `windows.yml`, позванное с меткой).
+#
+# ЧЕГО НЕ ДЕЛАЕТ. Не публикует. Черновик видят только те, у кого есть
+# право писать в репозиторий; опубликовать его — кнопка автора.
+#
+# ПОЧЕМУ МАК СОБИРАЕТСЯ ЗДЕСЬ, А НЕ У АВТОРА (решение 27-й сессии):
+# собранное здесь — ровно код под меткой, а не рабочая папка, куда
+# может попасть незакоммиченное; обе раздачи и суммы — одним прогоном;
+# своя подпись (`codesign -s -`) не требует сертификата и делается
+# на любой машине macOS. Цена — минуты macOS, в открытом репозитории
+# бесплатные.
+
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+jobs:
+  version:
+    name: Номер в метке совпадает с pyproject.toml
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.check.outputs.version }}
+      trial: ${{ steps.check.outputs.trial }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: check
+        run: |
+          python3 - <<'EOF'
+          import os, tomllib
+          tag = os.environ["GITHUB_REF_NAME"]
+          version = tomllib.load(open("pyproject.toml", "rb"))["project"]["version"]
+          base, _, suffix = tag[1:].partition("-")
+          if base != version:
+              raise SystemExit(f"tag {tag} doesn't match version {version} "
+                               "in pyproject.toml — change one of them")
+          if suffix and not suffix.startswith("trial."):
+              raise SystemExit(f"tag {tag}: only -trial.N suffixes are known")
+          with open(os.environ["GITHUB_OUTPUT"], "a") as out:
+              out.write(f"version={version}\n")
+              out.write(f"trial={'true' if suffix else 'false'}\n")
+          print(f"version {version}, trial: {bool(suffix)}")
+          EOF
+
+  build-windows:
+    name: Собрать раздачу Windows
+    needs: version
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Собрать
+        run: |
+          python -m pip install --upgrade pip wheel
+          python install/build-release.py --system windows --out dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Vertcut-windows
+          path: dist/Vertcut-windows.zip
+          if-no-files-found: error
+
+  build-mac:
+    name: Собрать раздачу macOS
+    needs: version
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Собрать
+        run: |
+          python -m pip install --upgrade pip wheel
+          python install/build-release.py --out dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Vertcut-mac
+          path: dist/Vertcut-mac.zip
+          if-no-files-found: error
+
+  # Право писать выпуски — только здесь, и только на этот шаг.
+  draft:
+    name: Черновик выпуска
+    needs: [version, build-windows, build-mac]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      TAG: ${{ github.ref_name }}
+      VERSION: ${{ needs.version.outputs.version }}
+      TRIAL: ${{ needs.version.outputs.trial }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: out
+          merge-multiple: true
+      - name: Суммы
+        working-directory: out
+        run: |
+          sha256sum Vertcut-mac.zip Vertcut-windows.zip > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+      - name: Текст выпуска
+        run: |
+          sed "s/@VERSION@/$VERSION/g" .github/release-notes.md > notes.md
+          if [ "$TRIAL" = true ]; then
+            { echo "> **Trial build of the release machinery — not for use. It will be deleted.**"; echo; cat notes.md; } > notes.tmp
+            mv notes.tmp notes.md
+          fi
+      # Повторный прогон той же метки обновляет СВОЙ черновик; выпуск,
+      # который уже опубликован, не трогается никогда.
+      - name: Положить в черновик
+        run: |
+          files="out/Vertcut-mac.zip out/Vertcut-windows.zip out/SHA256SUMS.txt"
+          if gh release view "$TAG" --json isDraft --jq .isDraft > state.txt 2>/dev/null; then
+            if [ "$(cat state.txt)" != true ]; then
+              echo "release $TAG is already published — not touching it"; exit 1
+            fi
+            gh release upload "$TAG" $files --clobber
+            gh release edit "$TAG" --notes-file notes.md
+          else
+            title="Vertcut $VERSION"
+            prerelease=""
+            if [ "$TRIAL" = true ]; then title="$title (trial)"; prerelease="--prerelease"; fi
+            gh release create "$TAG" $files --draft $prerelease --verify-tag \
+              --title "$title" --notes-file notes.md
+          fi
+          gh release view "$TAG" --json isDraft,assets --jq '{isDraft, assets: [.assets[].name]}'
+
+  # Как получит человек: скачать из черновика и поставить.
+  verify-windows:
+    name: Windows — скачать из черновика и поставить
+    needs: draft
+    permissions:
+      # Черновик виден только тем, у кого есть право писать.
+      contents: write
+    uses: ./.github/workflows/windows.yml
+    with:
+      release_tag: ${{ github.ref_name }}

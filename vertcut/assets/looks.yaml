@@ -1,0 +1,88 @@
+# Subtitle presets.
+#
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# A PRESET IS NOT A FULL STYLE — just a few settings on top of the
+# default style (subtitles.yaml).
+#
+# That's on purpose. If a preset were a full style, every new subtitle
+# setting would have to be added to every preset, and a forgotten one
+# would quietly stay old. Here a preset says only how it differs from
+# the default; everything else comes from there.
+#
+# Taking a preset resets the style to the default and puts the
+# preset's settings on top — so a preset looks the same whatever you
+# changed before. After that the settings are yours to change. "Save as
+# my style" turns the result into your style.
+#
+# EVERY PRESET HAS A COST — the share of phrases that no longer fit on
+# one page and need two. Measured on three videos: an animation essay
+# (350 phrases), a Russian interview (450) and an English video (128).
+# The cost is shown on screen and in `vertcut looks`, so you know it
+# before you choose.
+#
+# Change a preset's settings — MEASURE ITS COST AGAIN (`vertcut looks
+# VIDEO_ID`). The tests only check that a cost is written down and
+# that no preset needs two pages for more than 45% of phrases; they
+# can't check it's true — they don't have your videos.
+#
+# EVERY PRESET HAS TWO NAMES. `name` is what you read on the button;
+# the key (standard, large…) is what the command uses (`vertcut style …
+# --preset outline`). The name can change freely; the key should not —
+# someone may already have it in their notes.
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+standard:
+  name: Standard
+  about: the measured starting point — light box, dark text
+  cost: {essay: 0.23, interview: 0.08, english: 0.23}
+  settings: {}
+
+large:
+  name: Large
+  about: letters a fifth bigger; more phrases need two pages
+  cost: {essay: 0.37, interview: 0.16, english: 0.34}
+  settings:
+    # 0.050 × 1080 = 54 px.
+    #
+    # MEASURED, AND THE FIRST CHOICE WAS DROPPED. It started at 0.058 —
+    # 63 px, the size on a second real channel, so a real taste rather
+    # than "let's make it bigger". Share of phrases that need two pages:
+    #
+    #   size              essay   interview   english
+    #   0.0417 (default)   23%       8%         23%
+    #   0.046              31%      12%         29%
+    #   0.050              37%      16%         34%
+    #   0.054              43%      20%         40%
+    #   0.058              49%      24%         47%
+    #
+    # At 0.058, HALF the phrases of the essay and the English video need
+    # two pages. That can't be shipped: someone would take it on their
+    # first video and get subtitles that flip mid-phrase every other
+    # time. 0.050 is clearly bigger, and its cost is shown.
+    size: 0.050
+    # The box and baseline grow with the size, by the same ratio (54/45).
+    # Otherwise the letters would press against the top of the box.
+    box.height: 0.0513
+    position.baseline_from_bottom: 0.0169
+
+outline:
+  name: Outline
+  about: no box — the picture shows between the letters
+  # FEWER phrases need two pages than with Standard: without a box, its
+  # padding doesn't eat into the line — 794 px for letters instead of 756.
+  cost: {essay: 0.20, interview: 0.06, english: 0.22}
+  settings:
+    background: outline
+    text_color.spoken: "#FFFFFF"
+    text_color.upcoming: "#B8B8B8"
+
+narrow:
+  name: Narrow
+  about: a narrow font — more words fit on a line
+  cost: {essay: 0.15, interview: 0.03, english: 0.19}
+  settings:
+    font: Oswald.ttf
+    # In Oswald the holes inside letters fill up twice as early as in the
+    # other shipped fonts (measured, see subtitles.yaml), so it needs
+    # a thinner outline — in case you switch the background later.
+    outline.width: 0.04

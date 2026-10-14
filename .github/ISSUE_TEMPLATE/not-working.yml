@@ -1,0 +1,69 @@
+name: Something doesn't work
+description: Vertcut didn't install, didn't start, or did something wrong.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for writing. Issues are public: the log below shows your
+        folder and file names (but no API key), so look before you paste.
+
+        First, in Vertcut, look at **Not working?** at the bottom of the
+        left column. It may already say what to do.
+  - type: dropdown
+    id: system
+    attributes:
+      label: Your system
+      options:
+        - macOS, Apple Silicon (M1 or later)
+        - macOS, Intel
+        - Windows 10 or 11
+        - Linux
+        - Something else (say below)
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: System version
+      placeholder: "e.g. macOS 15.3, Windows 11 24H2, Ubuntu 24.04"
+  - type: dropdown
+    id: how
+    attributes:
+      label: How did you install Vertcut?
+      options:
+        - An AI agent installed it (INSTALL.md)
+        - Myself, in a terminal
+        - The installer from the Releases page
+        - I'm not sure
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What did you do, and what happened?
+      description: What you clicked or typed, what you expected, and what you got instead.
+    validations:
+      required: true
+  - type: textarea
+    id: error
+    attributes:
+      label: The error, word for word
+      description: Copy the text of the error if there was one. A screenshot is fine too.
+  - type: textarea
+    id: check
+    attributes:
+      label: Output of `vertcut check`
+      description: |
+        Installed by an agent or in a terminal: run `~/vertcut-app/.venv/bin/vertcut check`
+        (Windows: `& "$HOME\vertcut-app\.venv\Scripts\vertcut" check`).
+        Installed with the installer: the same information is on the **Not working?** page.
+      render: text
+  - type: textarea
+    id: log
+    attributes:
+      label: The last lines of the log
+      description: |
+        Logs are in `~/.vertcut/logs/` (Windows: `%USERPROFILE%\.vertcut\logs\`).
+        Take the newest file and paste its last 50 lines or so.
+      render: text

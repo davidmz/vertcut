@@ -1,0 +1,1140 @@
+/* ─────────────────────────────────────────────────────────────────────
+   vertcut · screen.css
+   Всё, чего нет в пакете передачи дизайна. Подключается ПОСЛЕ него.
+
+   Пакет отдаёт токены и компоненты; он не отдаёт шрифты (там они
+   подключаются с Google Fonts) и не отдаёт раскладку конкретных
+   экранов — только правила, по которым она собирается. Здесь и то
+   и другое.
+
+   Голых чисел тут почти нет: где токен есть, берётся токен. Где
+   числа свои — они из пакета, из описания экранов, и рядом сказано,
+   из какого.
+   ───────────────────────────────────────────────────────────────────── */
+
+/* ── Шрифты: со своего диска, а не из сети ──────────────────────────── */
+/*
+  Дизайн подключает все три с Google Fonts. Здесь так нельзя: сервис
+  обязан работать без интернета — он для того и местный. Поэтому
+  шрифты раздаёт сам сервер, а имена гарнитур оставлены те же, чтобы
+  правила из components.css работали как есть.
+
+  Все три переменные по весу, поэтому у каждой одно объявление
+  с диапазоном, а не по файлу на начертание.
+
+  Способ записан ДВАЖДЫ — сперва точный, потом простой. Точный
+  ('truetype-variations') говорит браузеру, что файл переменный;
+  простой понимают все, и переменную ось они всё равно берут из
+  font-weight. Браузер возьмёт первый, который знает, и второй раз
+  файл при этом не скачается.
+*/
+@font-face {
+  font-family: 'Golos Text';
+  src: url('/шрифты/GolosText.ttf') format('truetype-variations'),
+       url('/шрифты/GolosText.ttf') format('truetype');
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: block;   /* не показывать текст чужим шрифтом и потом
+                            дёргать: свои шрифты приезжают с того же
+                            диска и ждать нечего */
+}
+@font-face {
+  font-family: Literata;
+  src: url('/шрифты/Literata.ttf') format('truetype-variations'),
+       url('/шрифты/Literata.ttf') format('truetype');
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: block;
+}
+@font-face {
+  /* Курсив своим файлом: у Literata наклона в основном файле нет,
+     и браузер наклонял бы прямые буквы сам. На антикве это видно
+     сразу — получается не курсив, а покосившийся шрифт. */
+  font-family: Literata;
+  src: url('/шрифты/LiterataItalic.ttf') format('truetype-variations'),
+       url('/шрифты/LiterataItalic.ttf') format('truetype');
+  font-weight: 400 700;
+  font-style: italic;
+  font-display: block;
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  src: url('/шрифты/JetBrainsMono.ttf') format('truetype-variations'),
+       url('/шрифты/JetBrainsMono.ttf') format('truetype');
+  font-weight: 400 500;
+  font-style: normal;
+  font-display: block;
+}
+
+/* Числа табличными — правило пакета, но в самом пакете оно объявлено
+   только у класса .vc-num. Здесь то же для полей ввода и всего, что
+   набрано моношириной: столбцы дрожат одинаково везде. */
+.vc-num, .vc-input--mono, .vc-textarea--prompt { font-variant-numeric: tabular-nums; }
+
+/* ── Галочка ────────────────────────────────────────────────────────── */
+/*
+  Рисуется линией, а не набирается знаком «✓»: этого знака нет
+  ни в Golos Text, ни в Literata, ни в JetBrains Mono, и браузер брал бы
+  его из системного шрифта — то есть на чужой машине галочка выглядела
+  бы чужой, а на голой могла бы не выглядеть вовсе. Проверено разбором
+  таблицы знаков, см. assets/web/fonts/ORIGIN.md.
+*/
+.в-галка { width: 12px; height: 12px; flex: 0 0 12px; display: block; }
+.в-галка path { stroke: currentColor; stroke-width: 2.2; fill: none;
+                stroke-linecap: round; stroke-linejoin: round; }
+
+/* ── Каркас ─────────────────────────────────────────────────────────── */
+
+html, body { height: 100%; }
+
+/* Страница НЕ ПРОКРУЧИВАЕТСЯ ДОКУМЕНТОМ. Прокручивается рабочая
+   область, и только она.
+
+   Ничто не должно менять ширину от того, что человек делает. Выбрал
+   фрагмент — появилась полоса «Выбрано», страница стала выше, вылезла
+   полоса прокрутки документа, и ВСЁ наполнение сузилось на её ширину:
+   колонки, строки, переносы. Найдено автором ТРИЖДЫ подряд, и первые
+   два захода были мимо.
+
+   Первый: место под полосу резервировалось у рабочей области, а она
+   не прокручивалась вовсе — высотой не ограничена, растёт под своё
+   содержимое. Второй: резерв переехал к документу, но `scrollbar-gutter`
+   держится не во всяком браузере, а беда осталась той же.
+
+   Третий заход чинит причину. `.vc-shell` в пакете стоит на
+   `min-height: 100vh` — то есть может вырасти выше окна, и тогда
+   прокручивается документ. Здесь он ровно в окно и не прокручивается
+   вовсе; вместо него прокручивается рабочая область, у которой место
+   под полосу зарезервировано. Ровно так это и задумано в пакете:
+   колонка маршрута там `sticky` на всю высоту окна, а это имеет смысл
+   только при неподвижном каркасе.
+
+   На телефоне не трогаем: там колонка становится полосой снизу,
+   и каркас другой. */
+@media (min-width: 721px) {
+  .vc-shell { height: 100vh; overflow: hidden; }
+  .vc-main { min-height: 0; }
+  .vc-main__body { min-height: 0; scrollbar-gutter: stable; }
+}
+#экран { min-height: 100vh; }
+
+/* Колонка маршрута прокручивается сама, рабочая область — сама.
+   Иначе длинный список фраз утаскивает вниз и колонку тоже, а она
+   для того и стоит, чтобы всегда быть под рукой. */
+.vc-rail { position: sticky; top: 0; height: 100vh; overflow-y: auto; }
+/* `min-width: 0` — не украшение.
+   Дитя колонки-флекса по умолчанию не даёт себя сжать уже своего
+   содержимого. Раскрывашка с хвостом вывода содержит строки в триста
+   знаков — и, раскрывшись, растягивала рабочую область, а вместе с ней
+   съезжали ширины ВСЕГО экрана: колонка маршрута, плитка чисел,
+   карточки стадий. Ноль разрешает сжать, а перенос делает остальное. */
+.vc-main__body { overflow-y: auto; min-width: 0; }
+.vc-main__body > * { min-width: 0; max-width: 100%; }
+
+.в-лого { display: flex; flex-direction: column; gap: 2px; }
+.в-лого b { font: 400 18px/1 var(--serif); letter-spacing: -.01em; }
+.в-лого span { font-size: var(--t-sm); color: var(--ink-3);
+               overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.в-блок { display: flex; flex-direction: column; gap: var(--sp-2); }
+.в-растяжка { flex: 1; }
+
+/* Ряд: то, что стоит в строку с промежутком. Вертикаль набирается
+   gap у контейнера — правило 8 пакета; для горизонтали правила нет,
+   и здесь оно заведено одно на всё. */
+.в-ряд { display: flex; align-items: center; gap: var(--sp-2); }
+.в-ряд--верх { align-items: flex-start; }
+.в-ряд--широко { gap: var(--sp-3); }
+
+.в-мета { font: 400 var(--t-md)/1.4 var(--mono); color: var(--ink-3);
+          font-variant-numeric: tabular-nums;
+          display: flex; gap: var(--sp-2); flex-wrap: wrap; }
+.в-подпись { font-size: var(--t-md); color: var(--ink-3); }
+
+/* ── Полоса-сообщение поверх всего ──────────────────────────────────── */
+/*
+  Правило 3 пакета: опасное и сломанное говорит полосой во всю ширину,
+  никогда модальным окном. Здесь полосы копятся стопкой над рабочей
+  областью — снизу вверх, самая свежая сверху.
+*/
+.в-полосы { display: flex; flex-direction: column; gap: var(--sp-2); }
+
+/* ── Пустое состояние ───────────────────────────────────────────────── */
+/* Правило 9 пакета: пустое не молчит. */
+.в-пусто { display: flex; flex-direction: column; gap: var(--sp-2);
+           align-items: flex-start; padding: var(--sp-5) 0; }
+
+/* ── Пока грузится ──────────────────────────────────────────────────── */
+/*
+  Ни полосок-скелетов, ни вертушек. Первый ответ приходит с того же
+  диска за миллисекунды, и мелькнувший скелет читался бы как «сервис
+  думает» там, где он не думает вовсе.
+*/
+.в-ждём { padding: var(--sp-5); color: var(--ink-3); font-size: var(--t-md); }
+
+/* ── Первый вход (экран 01) ─────────────────────────────────────────── */
+/*
+  Колонка 720 по центру и полоса 56 сверху — числа из описания экрана
+  в пакете дизайна. Заголовок там 40, а не 34: это единственное место,
+  где он крупнее обычного, и крупнее он потому, что на экране больше
+  ничего нет.
+*/
+.в-вход { min-height: 100vh; display: flex; flex-direction: column; }
+.в-вход__верх {
+  height: var(--topbar-h); flex: 0 0 var(--topbar-h);
+  display: flex; align-items: center; gap: var(--sp-3);
+  padding: 0 var(--sp-4); background: var(--surface);
+  border-bottom: 1px solid var(--line);
+}
+.в-вход__середина {
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  padding: var(--sp-5) var(--sp-4);
+}
+.в-вход__колонка {
+  width: 720px; max-width: 100%;
+  display: flex; flex-direction: column; gap: var(--sp-4);
+}
+.в-вход__колонка .vc-h1 { font-size: 40px; }
+
+/* ── Зона перетаскивания ────────────────────────────────────────────── */
+/*
+  Подсветка при наведении файла — единственное место, где акцент
+  занимает не главную кнопку. Правило пакета оно не нарушает: это
+  не постоянный цвет, а ответ на действие, и держится он ровно
+  столько, сколько файл висит над окном.
+*/
+.vc-drop[data-ловим] { border-color: var(--accent); background: var(--accent-bg-2); }
+.vc-drop b { font-size: var(--t-lg); font-weight: 600; }
+.vc-drop span { font-size: var(--t-md); color: var(--ink-3); text-align: center; }
+.vc-drop:hover { border-color: var(--accent-hairline); background: var(--accent-bg-2); }
+
+/* ── Сетка карточек видео (экран 02) ────────────────────────────────── */
+/* Три колонки и кадр 16:9 высотой 128 — числа из описания экрана. */
+.в-сетка {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--sp-3);
+}
+.в-видео {
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: var(--r-card); overflow: hidden;
+  display: flex; flex-direction: column; text-align: left;
+  padding: 0; cursor: default; font: inherit; color: inherit;
+}
+.в-видео__кадр {
+  height: 128px; width: 100%; object-fit: cover; display: block;
+  border-bottom: 1px solid var(--line); background: var(--sunken);
+}
+.в-видео__низ {
+  padding: 14px 16px; display: flex; flex-direction: column; gap: var(--sp-2);
+}
+
+/* Название занимает РОВНО две строки, всегда.
+   Название бывает и в два слова, и в десять, а карточки стоят рядом
+   в сетке: пусти высоту по тексту — и ряд поедет ступеньками, метка
+   у одной карточки окажется на уровне чисел у соседней. Поэтому
+   высота задана заранее, а хвост длинного названия прячется
+   многоточием: имя файла человек и так узнаёт по началу. */
+.в-видео__имя {
+  font-size: 15.5px; font-weight: 600; line-height: 1.25;
+  min-height: calc(15.5px * 1.25 * 2);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  overflow: hidden;
+  /* Название стало кнопкой — ради клавиатуры, а не ради нового вида:
+     карточка перестала быть кнопкой (внутри у неё «Удалить»), и без
+     этого дорога до видео с клавиатуры пропала бы молча. Поэтому
+     сбрасывается ровно то, что браузер навязывает кнопке сам. */
+  background: none; border: 0; padding: 0; margin: 0;
+  font-family: inherit; color: inherit; text-align: left; cursor: pointer;
+}
+.в-видео__имя:hover { text-decoration: underline; text-underline-offset: 2px; }
+
+/* Карточка с видео нажимается целиком; карточка «Добавить видео» —
+   отдельная кнопка, и рука ей достаётся своим правилом. */
+.в-видео--живая { cursor: pointer; }
+.в-видео--живая:hover { border-color: var(--line-strong); }
+
+/* «Удалить» — приглушённой ссылкой и прижата вправо.
+   Карточек в сетке десяток, и красная кнопка на каждой кричала бы
+   с экрана, который человек открывает всякий раз. Красной становится
+   полоса подтверждения — там это и к месту. */
+.в-видео__убрать { align-self: flex-end; }
+
+/* Метка слева, числа справа и в два этажа: сверху про сам исходник,
+   снизу про то, что из него нарезано. */
+.в-видео__ряд { display: flex; align-items: flex-start; gap: var(--sp-3); }
+.в-видео__числа {
+  margin-left: auto; text-align: right;
+  display: flex; flex-direction: column; gap: 3px;
+}
+
+/* Карточка «Добавить видео» — пунктиром, как зона перетаскивания:
+   это одно и то же действие, и выглядеть оно должно одинаково. */
+.в-видео--добавить {
+  border-style: dashed; border-color: var(--line-strong);
+  align-items: flex-start; justify-content: center; gap: 4px;
+  padding: 28px; cursor: pointer; background: var(--surface-alt);
+}
+.в-видео--добавить:hover { border-color: #cdc6b2; }
+
+/* ── Пунктирная кнопка в колонке ────────────────────────────────────── */
+.в-пунктиром {
+  border: 1px dashed var(--line-strong); border-radius: var(--r-ctl);
+  background: none; color: var(--ink-2); cursor: pointer;
+  height: var(--ctl-h-sm); font: 500 var(--t-md)/1 var(--sans);
+  display: flex; align-items: center; gap: var(--sp-2); padding: 0 12px;
+}
+.в-пунктиром:hover { border-color: var(--accent-hairline); background: var(--accent-bg-2); }
+
+/* ── Разбор (экран 03) ──────────────────────────────────────────────── */
+
+.в-стадии { display: flex; flex-direction: column; gap: var(--sp-2); }
+
+.в-стадия {
+  display: flex; flex-direction: column; gap: var(--sp-2);
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: var(--r-card); padding: 14px 18px;
+}
+.в-стадия__ряд { display: flex; align-items: center; gap: 10px; }
+.в-стадия__зовут { font-size: var(--t-base); font-weight: 500; }
+.в-стадия__мета {
+  margin-left: auto; font: 400 var(--t-sm)/1 var(--mono);
+  font-variant-numeric: tabular-nums; color: var(--ink-3);
+}
+.в-стадия[data-как="сделана"] .в-галка { color: var(--good-ink); }
+.в-стадия[data-как="идёт"] {
+  background: var(--accent-bg); border-color: var(--accent-hairline);
+}
+.в-стадия[data-как="идёт"] .в-стадия__зовут { color: var(--accent-ink); }
+.в-стадия[data-как="идёт"] .в-стадия__мета { color: var(--accent-ink-2); }
+.в-стадия[data-как="ждёт"] { color: var(--ink-off); }
+.в-стадия[data-как="ждёт"] .в-стадия__зовут { color: var(--ink-off); font-weight: 400; }
+.в-стадия[data-как="ждёт"] .в-стадия__мета { color: var(--ink-off); }
+
+/* Точка у идущей стадии — она же вместо галочки у ждущей. */
+.в-точка-стадии { width: 12px; flex: 0 0 12px; text-align: center;
+                  color: var(--ink-off); font-size: var(--t-sm); }
+.в-стадия[data-как="идёт"] .в-точка-стадии { color: var(--accent); }
+
+/* ── Плитка чисел ───────────────────────────────────────────────────── */
+/*
+  Четыре числа в ряд, разделённые линией в один пиксель. Прочерк там,
+  где числа ещё нет: пустая клетка читалась бы как ноль, а ноль планов
+  и «планы ещё не считали» — разные вещи.
+*/
+.в-плитка {
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1px; background: var(--line);
+  border: 1px solid var(--line); border-radius: var(--r-card);
+  overflow: hidden;
+}
+.в-плитка > div {
+  background: var(--surface); padding: 16px 18px;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.в-плитка b {
+  font: 400 22px/1 var(--mono); font-variant-numeric: tabular-nums;
+}
+.в-плитка span { font-size: var(--t-sm); color: var(--ink-3); }
+.в-плитка b[data-нет] { color: var(--ink-off); }
+
+/* ── Раскрывашка ────────────────────────────────────────────────────── */
+.в-раскрывашка { border-top: 1px solid var(--line); padding-top: var(--sp-3); }
+/* Стопка раскрывашек подряд.
+
+   У раскрывашки отступ есть только СВЕРХУ, под её чертой: снизу её
+   отделяет просвет контейнера — так она встаёт и в рабочей области,
+   где просвет даёт сама область (18 пикселей, число пакета).
+   А в обычном `div` просвета нет вовсе, и слова оказывались прижаты
+   к своей черте: шестнадцать сверху, ноль снизу.
+
+   Просвет здесь равен отступу сверху — тогда строка стоит ровно
+   посередине между двумя чертами. Взять его на глаз значило бы
+   завести второе число на тот же вопрос. */
+.в-стопка { display: flex; flex-direction: column; gap: var(--sp-3); }
+.в-раскрывашка > summary {
+  cursor: pointer; font-size: var(--t-md); color: var(--ink-2);
+  list-style: none;
+}
+.в-раскрывашка > summary::-webkit-details-marker { display: none; }
+.в-раскрывашка > summary::before { content: "+ "; color: var(--ink-4); }
+.в-раскрывашка[open] > summary::before { content: "− "; }
+.в-раскрывашка p { color: var(--ink-2); font-size: 14.5px; max-width: var(--measure); }
+/* Список внутри раскрывашки: им набрана страница помощи, где у каждой
+   беды по три-четыре шага. Своего класса ей не заведено нарочно —
+   раскрывашка уже есть, и вторая такая же разошлась бы с первой. */
+.в-раскрывашка ul { margin: var(--sp-2) 0 0; padding-left: 1.2em; }
+.в-раскрывашка li { color: var(--ink-2); font-size: 14.5px;
+  max-width: var(--measure); margin-bottom: var(--sp-1); }
+
+/* Хвост вывода работы: моноширинный, прокручивается сам. */
+.в-хвост {
+  font: 400 12px/1.5 var(--mono); color: var(--ink-3);
+  background: var(--sunken); border-radius: var(--r-row);
+  padding: 12px 14px; max-height: 220px; overflow: auto;
+  white-space: pre-wrap; word-break: break-word;
+  min-width: 0; max-width: 100%;
+}
+.в-раскрывашка { min-width: 0; max-width: 100%; }
+
+/* ── Фрагменты (экраны 04 и 05) ─────────────────────────────────────── */
+/*
+  Список фраз — главный элемент экрана: им фрагмент отмечают всегда,
+  и без всякого AI тоже. Правая колонка 300 — приглашение и «свой
+  текст»; она не исчезает и не превращается в заглушку во весь экран.
+*/
+.в-фрагменты {
+  display: grid; grid-template-columns: minmax(0, 1fr) var(--rail-w);
+  gap: var(--sp-3); align-items: start; min-height: 0;
+}
+/* Ноль разрешает сжать. Дитя сетки, как и дитя флекса, по умолчанию
+   не даёт себя сузить уже своего содержимого — и длинная причина
+   «не годится» в развёрнутом списке растянула бы колонку, а вместе
+   с ней уехал бы список фраз. Правило проекта, записанное ещё
+   в четвёртой сессии; здесь оно понадобилось второй раз. */
+.в-фрагменты > * { min-width: 0; }
+
+/* Список фраз прокручивается сам, шапка со столбцами стоит на месте:
+   фраз бывает пятьсот, и уехавшая шапка превращает столбцы в загадку.
+
+   Шапка и строка столбцов прилипают ОДНИМ куском, а не по отдельности.
+   Порознь второй приходилось задавать отступ числом («49 пикселей от
+   верха») — а шапка растёт: подсказка про Shift переносится на две
+   строки, и столбцы уезжали под неё. Число, взятое из вида одного
+   состояния, врёт во всех остальных. */
+.в-фразы { max-height: calc(100vh - 300px); overflow: auto; }
+.в-фразы__верх {
+  position: sticky; top: 0; z-index: 2; background: var(--surface);
+}
+
+.в-фраза { user-select: none; }
+.в-фраза[data-край] { font-weight: 500; }
+
+/* Первый щелчок сделан, ждём второй: строка под курсором показывает,
+   каким выйдет выбор. */
+.в-фразы[data-ждём-конец] .vc-row:hover { background: var(--accent-bg-2); }
+
+.в-поиск { height: var(--ctl-h-xs); padding: 0 10px; font-size: var(--t-md);
+           border: 1px solid var(--line-strong); border-radius: var(--r-ctl);
+           background: var(--surface); color: var(--ink); min-width: 0; }
+.в-поиск:focus { outline: 2px solid var(--accent); outline-offset: -2px; }
+/* Поле номера — той же гарнитурой, что и поиск рядом. Моноширинной
+   она была потому, что в неё кладут число; но стоят они бок о бок,
+   и два шрифта в одной строке читаются как небрежность, а не как
+   смысл. Табличные цифры тут ничего не выравнивают: число в поле
+   одно. */
+.в-поиск--номер { width: 92px; }
+
+/* Клавиша в подсказке — как надпись на клавише, а не как знак ⇧:
+   этого знака нет ни в одном из трёх шрифтов экрана. */
+.в-клавиша {
+  font: 500 11px/1 var(--mono); padding: 3px 6px; border-radius: 3px;
+  border: 1px solid var(--line-strong); background: var(--surface-alt);
+  color: var(--ink-2);
+}
+
+/* ── Вертикалка (экран 07) ──────────────────────────────────────────── */
+/*
+  Справа ВСЕГДА сама вертикалка в форме 9:16: всё, что меняется слева,
+  видно в ней. Это главная перестановка экрана в пакете дизайна.
+*/
+.в-вертикалка {
+  display: grid; grid-template-columns: minmax(0, 1fr) var(--rail-w);
+  gap: var(--sp-3); align-items: start;
+}
+
+.в-правая { display: flex; flex-direction: column; gap: var(--sp-3);
+            position: sticky; top: 0; }
+
+/* Превью — картинка с сервера. Браузер её не набирает, а показывает:
+   субтитр на ней нарисован тем же шрифтом, каким попадёт в файл. */
+/* Черновой просмотр: исходник в окне колонки. Окно двигает JS
+   долями, которые посчитал сервер, — здесь только «не вылезать». */
+.в-черновик { position: relative; overflow: hidden; padding: 0; background: #000; }
+.в-черновик__видео {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%; display: block; background: #000;
+}
+.в-черновик__видео[data-нет] { opacity: 0; }
+/* Плашка в конце ложится ПОВЕРХ плеера — ровно так, как она ложится
+   поверх картинки в самом файле. Звук при этом идёт своим ходом:
+   плеер под ней не остановлен, он просто не виден.
+
+   Кнопки плеера остаются доступными: картинка кладётся выше видео,
+   но ниже его родных кнопок — они рисуются браузером поверх всего
+   содержимого элемента. */
+/* Черновой просмотр вместе со своей полосой. Родных кнопок у него
+   нет: они размечены по ИСХОДНИКУ, а вертикалка занимает в нём
+   секунды — перемотать ими было некуда. */
+.в-черновик__всё { display: flex; flex-direction: column; gap: var(--sp-2); }
+.в-полоса-ряд { flex-wrap: wrap; }
+.в-полоса { flex: 1; min-width: 120px; }
+
+.в-черновик__плашка {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%; object-fit: contain; background: #000;
+  pointer-events: none;
+}
+
+.vc-seg--xs > button { height: 24px; padding: 0 9px; font-size: var(--t-sm); }
+
+.в-превью {
+  width: 100%; aspect-ratio: var(--ar-vertical); object-fit: contain;
+  background: #000;
+  border: 1px solid var(--line-strong); border-radius: var(--r-frame);
+  background: var(--sunken); display: block;
+}
+
+/* ── Планы ──────────────────────────────────────────────────────────── */
+
+.в-планы {
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+.в-план { display: flex; flex-direction: column; gap: 4px;
+          border: 0; background: none; padding: 0; cursor: pointer;
+          text-align: left; font: inherit; color: inherit; }
+.в-план__кадр {
+  position: relative; aspect-ratio: var(--ar-source); overflow: hidden;
+  border: 1px solid var(--line); border-radius: var(--r-frame);
+  background: var(--sunken);
+}
+.в-план__кадр img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.в-план[aria-selected="true"] .в-план__кадр { border: 2px solid var(--accent); }
+.в-план__низ { font: 400 var(--t-xs)/1 var(--mono); color: var(--ink-3); }
+
+/* Окно колонки поверх кадра плана: то самое, каким его вырежет сборка.
+   Прямоугольник, а не текст — считает его сервер, браузер только ставит. */
+.в-окно {
+  position: absolute; top: 0; bottom: 0;
+  border: 2px solid rgba(255, 253, 248, .95);
+  box-shadow: 0 0 0 9999px rgba(26, 25, 23, .45);
+  pointer-events: none;
+}
+.в-план__кадр[data-полный] .в-окно { display: none; }
+
+/* Крупный кадр выбранного плана: на нём рамку и двигают. */
+.в-рамка-рукой {
+  position: relative; aspect-ratio: var(--ar-source); overflow: hidden;
+  border-radius: var(--r-frame); background: var(--sunken);
+  cursor: ew-resize; user-select: none; touch-action: none;
+}
+.в-рамка-рукой img { width: 100%; height: 100%; object-fit: cover;
+                     display: block; pointer-events: none; }
+.в-рамка-рукой .в-окно { border-color: var(--accent); }
+
+.в-панель-плана {
+  display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap;
+  background: var(--surface-alt); border: 1px solid var(--line);
+  border-radius: var(--r-row); padding: 10px 14px;
+}
+
+/* Невидимая распорка ростом и шириной с кнопку, которой пока нет.
+   Ряд от появления кнопки не переносится на вторую строку, панель
+   не становится выше, и крупный кадр не уезжает из-под курсора
+   в тот самый миг, когда человек отпустил рамку. `visibility`,
+   а не `opacity`: прозрачное всё ещё ловит щелчки. */
+.в-распорка { visibility: hidden; pointer-events: none; }
+
+/* ── Сборка (экран 09) ──────────────────────────────────────────────── */
+
+.в-очередь { display: flex; flex-direction: column; gap: var(--sp-2); }
+
+.в-дело {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: var(--r-card); padding: 10px 14px;
+}
+.в-дело[data-как="упал"] { border-color: var(--bad-line); background: var(--bad-bg); }
+.в-дело[data-как="идёт"] { border-color: var(--accent-hairline); background: var(--accent-bg); }
+.в-дело__кадр {
+  width: 28px; height: 50px; flex: 0 0 28px; border-radius: 3px;
+  object-fit: cover; background: var(--sunken);
+  border: 1px solid var(--line);
+}
+.в-дело__что { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+/* Строка целиком ведёт на вертикалку — отсюда рука вместо стрелки
+   и подсветка под курсором. Подсветка та же, что у строки списка
+   фраз: это одно и то же обещание — «щёлкни, и откроется». */
+.в-дело { cursor: pointer; }
+.в-дело:hover { border-color: var(--line-strong); }
+/* Название — кнопка, но кнопкой не выглядит: вид у неё тот же, что
+   был у `<b>`. Кнопкой она стала ради клавиатуры (см. `имя_дела`),
+   а не ради нового вида, и сбрасывать надо ровно то, что браузер
+   навязывает кнопке сам. Тот же приём, что у карточки видео. */
+.в-дело__зовут { font-size: var(--t-base); font-weight: 500;
+                 white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+                 background: none; border: 0; padding: 0; margin: 0;
+                 font-family: inherit; color: inherit; text-align: left;
+                 cursor: pointer; }
+.в-дело__зовут:hover { text-decoration: underline;
+                       text-underline-offset: 2px; }
+.в-дело__почему { font-size: var(--t-sm); color: var(--ink-3); }
+.в-дело[data-как="упал"] .в-дело__почему { color: var(--bad-ink-3); }
+
+/* Удалённая вертикалка. Красным — тем же, каким говорит «упал»:
+   и то и другое значит «этой строке файла не будет». Но рука
+   и подсветка снимаются: щёлкать некуда, вертикалки нет, и обещать
+   переход строкой, которая никуда не ведёт, нельзя.
+   Кадра у неё не рисуется вовсе — вместо картинки, за которой
+   приходит отказ, стоит пустое место того же размера: ряд не должен
+   разъезжаться по высоте от того, что одну вертикалку убрали. */
+.в-дело[data-как="удалён"] { border-color: var(--bad-line);
+                             background: var(--bad-bg);
+                             cursor: default; }
+.в-дело[data-как="удалён"]:hover { border-color: var(--bad-line); }
+.в-дело[data-как="удалён"] .в-дело__почему { color: var(--bad-ink-3); }
+.в-дело__кадр--нет { width: 28px; height: 50px; flex: 0 0 28px;
+                     border-radius: 3px; border: 1px dashed var(--bad-line);
+                     background: none; }
+.в-дело[data-как="удалён"] .в-дело__зовут,
+.в-дело[data-как="удалён"] .в-дело__зовут:hover {
+  text-decoration: line-through; text-underline-offset: 0;
+  color: var(--bad-ink); cursor: default;
+}
+.в-дело__справа { display: flex; align-items: center; gap: var(--sp-2); }
+
+/* ── Редактор субтитров (экран 08) ──────────────────────────────────── */
+/*
+  Три области в одном экране и ни одной вкладки: слева строки,
+  в середине кадр в натуральной форме, справа вид. Всё, что меняется
+  справа, видно в середине сразу — поэтому предпросмотр стоит в центре,
+  а не под кнопкой «нарисовать лист».
+*/
+.в-субтитры {
+  display: grid; grid-template-columns: minmax(0, 1fr) 312px 328px;
+  gap: var(--sp-3); align-items: start;
+}
+.в-субтитры > * { min-width: 0; }
+
+/* Слева ── строки */
+.в-строки { max-height: calc(100vh - 210px); overflow: auto; }
+.в-строка {
+  display: flex; gap: 12px; padding: 9px var(--sp-3);
+  border-bottom: 1px solid var(--line-row); cursor: pointer;
+  font-size: 14.5px; color: var(--ink-2);
+}
+.в-строка:hover { background: #f7f4ea; }
+.в-строка[aria-selected="true"] {
+  background: var(--accent-bg-2); color: var(--ink);
+  border-left: 2px solid var(--accent); padding-left: 14px;
+}
+.в-строка[data-не-влезает] { background: var(--warn-bg); }
+/* Таймкод — техническая мелочь, и места ему отведено как мелочи.
+   Девяносто шесть пикселей на две строки съедали треть колонки,
+   а колонка тут для текста субтитра и кнопок под ним. Показывается
+   НАЧАЛО; конец и длина — в подсказке, их спрашивают редко. */
+.в-строка__когда {
+  width: 46px; flex: 0 0 46px; font-family: var(--mono);
+  font-size: var(--t-xs); font-variant-numeric: tabular-nums;
+  color: var(--ink-4); white-space: nowrap; padding-top: 3px;
+}
+.в-строка__текст { flex: 1; min-width: 0; }
+.в-строка__метка { font: 400 var(--t-xs)/1.4 var(--mono); color: var(--warn-ink); }
+.в-правка { display: flex; flex-direction: column; gap: var(--sp-2); flex: 1; }
+.в-правка textarea { width: 100%; }
+
+/* Середина ── кадр */
+.в-кадр-обёртка {
+  background: var(--sunken); border-radius: var(--r-card);
+  padding: var(--sp-3); display: flex; flex-direction: column; gap: var(--sp-2);
+}
+.в-кадр {
+  position: relative; width: 100%; aspect-ratio: var(--ar-vertical);
+  border-radius: var(--r-frame); overflow: hidden; background: #000;
+  user-select: none; touch-action: none;
+}
+.в-кадр img { position: absolute; inset: 0; width: 100%; height: 100%;
+              display: block; }
+/* Картинку браузер умеет таскать САМ — своим призраком, за пределы
+   окна и мимо всякой нашей логики. Ровно это и выглядело как «субтитр
+   тянется как инородный элемент». Своё перетаскивание работает только
+   тогда, когда чужое выключено. */
+.в-кадр img { -webkit-user-drag: none; user-select: none; }
+.в-кадр__слой { cursor: grab; }
+.в-кадр[data-тащим] .в-кадр__слой { cursor: grabbing; }
+.в-кадр[data-тащим] { cursor: grabbing; }
+
+/* Опасные зоны — пунктиром, не заливкой. Числа приходят с сервера,
+   браузер только ставит линии. */
+.в-зона { position: absolute; left: 0; right: 0; pointer-events: none; }
+.в-зона--сверху { top: 0; border-bottom: 1px dashed rgba(255,253,248,.55); }
+.в-зона--снизу { bottom: 0; border-top: 1px dashed rgba(255,253,248,.55); }
+.в-зона--сбоку { top: 0; bottom: 0; left: auto; right: auto;
+                 border-left: 1px dashed rgba(255,253,248,.35); }
+.в-база {
+  position: absolute; left: 0; right: 0; height: 0;
+  border-top: 1px solid var(--accent); pointer-events: none;
+}
+.в-база span {
+  position: absolute; right: 4px; top: 3px;
+  font: 400 10px/1 var(--mono); color: var(--surface);
+  background: var(--accent); padding: 2px 5px; border-radius: 3px;
+}
+
+/* Справа ── панель вида */
+.в-панель { display: flex; flex-direction: column; gap: var(--sp-3); }
+/* Ряд кнопок В ПАНЕЛИ переносится на вторую строку.
+
+   Найдено автором глазами: три кнопки под надписью плашки не влезали
+   в ширину панели, ряд их не переносил, и подписи ломались на три
+   строки ВНУТРИ кнопки — а у кнопки в пакете высота задана числом,
+   и текст вылезал за её рамку.
+
+   Правится не кнопка, а ряд, и только тот, что стоит в панели:
+   у кнопки высота — правило пакета, и трогать его нельзя. Панель же
+   узкая по устройству, и ряд в ней обязан переноситься. Подписи при
+   этом всё равно держатся короткими: перенос — это заслон, а не
+   разрешение писать в кнопке предложение. */
+.в-панель .в-ряд { flex-wrap: wrap; }
+.в-настройка { display: flex; flex-direction: column; gap: 6px; }
+.в-настройка__зовут {
+  font: 400 var(--t-xs)/1 var(--mono); letter-spacing: var(--ls-caps);
+  text-transform: uppercase; color: var(--ink-4);
+}
+.в-ползунок { display: flex; align-items: center; gap: var(--sp-2); }
+.в-ползунок input { flex: 1; }
+/* Число с единицей — одной строкой. Ширина была задана числом (52px),
+   и «47.92 %» в неё не влезало: единица уезжала под число второй
+   строкой, а высота ряда прыгала от значения. */
+.в-ползунок .vc-num { min-width: 64px; white-space: nowrap; text-align: right;
+                      font-size: var(--t-sm); }
+.в-свотчи { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.в-свотч {
+  width: 22px; height: 22px; border-radius: 4px; cursor: pointer;
+  border: 1px solid var(--line-strong); padding: 0;
+}
+.в-свотч[aria-pressed="true"] { outline: 2px solid var(--accent);
+                                outline-offset: 1px; }
+.в-вид {
+  display: flex; flex-direction: column; gap: 2px; align-items: flex-start;
+  border: 1px solid var(--line-strong); border-radius: var(--r-ctl);
+  background: var(--surface); padding: 8px 10px; cursor: pointer;
+  text-align: left; width: 100%; font: inherit; color: inherit;
+}
+.в-вид:hover { border-color: var(--accent-hairline); background: var(--accent-bg-2); }
+.в-вид b { font-size: var(--t-md); font-weight: 600; }
+.в-вид span { font-size: var(--t-xs); color: var(--ink-3); }
+
+/* ── Описания (экран 06) ────────────────────────────────────────────── */
+
+.в-описания { display: flex; flex-direction: column; gap: var(--sp-2); }
+.в-описание { display: flex; flex-direction: column; gap: var(--sp-2); }
+.в-описание--пусто { border-style: dashed; }
+
+/* ── Настройки (экран 10) ───────────────────────────────────────────── */
+
+/* Раздел настроек — кнопка в КОЛОНКЕ СЕРВИСА, а не во второй колонке.
+   Своей колонки у настроек больше нет: в живом сервисе колонка слева
+   есть всегда, и два меню рядом — это пустое место шириной в треть
+   экрана. Вид взят у шага маршрута, который стоит там же. */
+.в-раздел {
+  text-align: left; border: 0; background: none; cursor: pointer;
+  font: 400 var(--t-base)/1.3 var(--sans); color: var(--ink-2);
+  padding: var(--sp-2) 10px; border-radius: var(--r-ctl);
+}
+.в-раздел:hover { background: #f5f2e8; }
+.в-раздел[aria-current="true"] {
+  background: var(--accent-bg); color: var(--accent-ink); font-weight: 500;
+  border-left: 2px solid var(--accent); border-radius: 0 var(--r-ctl) var(--r-ctl) 0;
+}
+
+.в-факты { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+           gap: 1px; background: var(--line); border: 1px solid var(--line);
+           border-radius: var(--r-card); overflow: hidden; }
+.в-факты > div { background: var(--surface); padding: 12px 16px;
+                 display: flex; flex-direction: column; gap: 3px; }
+.в-факты span { font-size: var(--t-sm); color: var(--ink-3); }
+.в-факты b { font: 400 var(--t-lg)/1.2 var(--mono);
+             font-variant-numeric: tabular-nums; }
+
+.в-числа { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+           gap: 4px var(--sp-3); }
+.в-числа div { display: flex; gap: var(--sp-2); font-size: var(--t-md); }
+.в-числа b { margin-left: auto; font-family: var(--mono);
+             font-variant-numeric: tabular-nums; font-weight: 400; }
+
+.в-клавиши { display: flex; flex-direction: column; gap: var(--sp-2); }
+.в-клавиши div { display: flex; gap: var(--sp-3); align-items: baseline;
+                 font-size: var(--t-md); color: var(--ink-2); }
+.в-клавиши .в-клавиша { flex: 0 0 auto; }
+
+
+/* Метка состояния не переносится на две строки. Перенос ломает ряд,
+   в котором она стоит вместе с мета-строкой: карточки в сетке
+   разъезжаются по высоте, и это первое, что видно глазом. Слова
+   в метках подобраны короткими; правило страхует от следующего
+   длинного. */
+.vc-tag { white-space: nowrap; flex: 0 0 auto; }
+
+
+/* Шаг маршрута, которому некуда вести, — не кнопка, а строка.
+   Курсора-руки у него нет, наведение его не подсвечивает: он
+   не обещает того, чего не сделает. */
+div.vc-step { cursor: default; }
+div.vc-step:hover { background: none; }
+div.vc-step[aria-current="step"]:hover { background: var(--accent-bg); }
+div.vc-step[data-некуда] { color: var(--ink-off); }
+div.vc-step[data-некуда] .vc-step__n { color: var(--ink-off); }
+
+
+/* ── Полоса «получилось» ────────────────────────────────────────────── */
+/*
+  В пакете дизайна полос три: bad (сломалось), warn (устарело), ask
+  (спрашиваем). Полосы «получилось» там нет — и это заметно сразу,
+  как только сервис начинает что-то делать по нажатию: «вертикалка
+  создана» приходилось говорить акцентной полосой, а акцент в этой
+  системе значит «спрашиваем», и человек читал успех как вопрос.
+
+  Цвета взяты из токенов пакета — сигнал good там объявлен
+  (`--good-bg`, `--good-line`, `--good-ink`), просто полосы у него
+  не было. Строение то же, что у трёх остальных.
+*/
+.vc-bar--good {
+  background: var(--good-bg); border: 1px solid var(--good-line);
+  border-left: 3px solid var(--good-ink);
+}
+.vc-bar--good b { color: var(--good-ink); }
+.vc-bar--good span { color: #4f7a62; }
+
+
+/* Полоса выбора фрагмента держит одну высоту во всех своих
+   состояниях: «начало отмечено», «считаю», «выбрано столько-то».
+   Прыгая, она двигала список фраз под курсором — а человек в этот
+   момент как раз целится в следующую строку. */
+.в-выбор { min-height: 76px; }
+
+
+/* ── Картинка, которую ещё рисуют ───────────────────────────────────── */
+/*
+  Кадр вертикалки сервис считает секунду-две: вынимает кадр
+  из исходного файла, режет колонку и рисует субтитр настоящим
+  шрифтом. Место под него держит форму заранее — прыгать ему
+  нельзя, — а поверх стоит слово о том, что происходит.
+*/
+.в-рисуется { position: relative; display: block; }
+.в-рисуется__слово {
+  position: absolute; inset: 0; display: none;
+  align-items: center; justify-content: center;
+  background: var(--sunken); border-radius: var(--r-frame);
+  font: 400 var(--t-md)/1 var(--sans); color: var(--ink-3);
+}
+.в-рисуется[data-рисуется] .в-рисуется__слово { display: flex; }
+/* Пока рисуется — старой картинки не видно: показать вчерашний кадр
+   как сегодняшний хуже, чем не показать никакого. */
+.в-рисуется[data-рисуется] img,
+.в-рамка-рукой[data-рисуется] img,
+.в-кадр[data-рисуется] img { visibility: hidden; }
+.в-кадр[data-рисуется] .в-рисуется__слово { display: flex; }
+.в-кадр[data-рисуется] .в-зона,
+.в-кадр[data-рисуется] .в-база { display: none; }
+.в-рамка-рукой[data-рисуется] .в-рисуется__слово { display: flex; }
+.в-рамка-рукой[data-рисуется] .в-окно { display: none; }
+.в-черновик[data-рисуется] .в-рисуется__слово { display: flex; }
+
+/* ── Правка строки субтитра ─────────────────────────────────────────── */
+/*
+  Поле не имеет права вылезать за список: список — это колонка-флекс,
+  а её дитя по умолчанию не даёт себя сжать уже своего содержимого,
+  и `textarea` со своей минимальной шириной вытаскивала наружу
+  горизонтальную прокрутку.
+*/
+.в-строка { min-width: 0; }
+.в-строка__текст { min-width: 0; overflow-wrap: anywhere; }
+.в-правка { min-width: 0; }
+.в-правка textarea { width: 100%; box-sizing: border-box; min-width: 0; }
+/* Счётчик знаков — своей строкой. Рядом с кнопками он ломался
+   на четыре куска: «2 стр», «· 14 и», «16», «знаков». */
+.в-правка__счёт { display: block; white-space: nowrap; }
+.в-правка__кнопки { flex-wrap: wrap; gap: 6px; }
+.в-строки { overflow-x: hidden; }
+
+/* ── Ссылка, которая выглядит кнопкой ───────────────────────────────── */
+/*
+  «Скачать» — это ссылка: файл отдаёт сервер, и обычная ссылка делает
+  это лучше всякого скрипта. Но в пакете дизайна `.vc-btn` написан
+  для `<button>`, а ссылке цвет и подчёркивание достаются от общего
+  правила для `a` — и кнопка выходила акцентным подчёркнутым текстом
+  внутри рамки.
+
+  Правила пакета не трогаем: он говорит про кнопки, а это про ссылку,
+  которой поручили выглядеть кнопкой.
+*/
+a.vc-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  text-decoration: none; color: var(--ink);
+}
+a.vc-btn:hover { color: var(--ink); }
+a.vc-btn--primary,
+a.vc-btn--primary:hover { color: var(--surface); }
+
+/* Ряд полей одной высоты: ключ, адрес, протокол, модель. Именно ряд,
+   а не сетка с числом колонок: полей в ряду бывает два и бывает три,
+   а вписывать число значило бы держать его в двух местах. */
+.в-поля {
+  display: flex; flex-wrap: wrap; gap: var(--sp-3);
+  /* По ВЕРХУ, а не по низу. Подписи у всех полей однострочные, и по
+     верху сами поля встают вровень так же. А по низу они встают вровень
+     только пока все одной высоты: раскрылся список моделей — и соседние
+     поля уехали бы вниз, к его дну. */
+  align-items: flex-start;
+}
+.в-поля > .vc-field { flex: 1 1 220px; }
+
+/* Кнопка в ряду полей встаёт по НИЗУ — вровень с полями, а не с их
+   подписями.
+
+   Ряд выровнен по верху нарочно (причина строкой выше), и полю это
+   в самый раз: подпись у него своя, и по верху они встают вровень.
+   А у кнопки подписи нет вовсе — и «Проверить» с «Убрать» вставали
+   вровень со словом «Ключ», то есть висели НАД строкой, в которую
+   этот ключ вписывают. Автор увидел это первым же взглядом.
+
+   Прижимает их к низу ряда, а низ ряда — это низ самого высокого
+   в нём поля, то есть его поле ввода: оно в поле последнее. */
+.в-поля > .vc-btn { align-self: flex-end; }
+
+/* Три пути и три кнопки — сеткой, а не рядами.
+
+   Рядом путь вставал сразу за своей подписью, а подписи разной
+   длины: «разборы» и «настройки и мои шрифты». Три пути начинались
+   в трёх разных местах, и это ровно то, что здесь читают.
+
+   Первый столбец по самой длинной подписи, второй тянется, третий
+   по кнопке. Пути длинные и переносятся — поэтому `align-items`
+   по верху: кнопка стоит у первой строки пути, а не плавает
+   посередине двух. */
+.в-пути { display: grid; gap: var(--sp-2); }
+.в-пути__ряд {
+  display: grid; grid-template-columns: max-content minmax(0, 1fr) max-content;
+  gap: var(--sp-3); align-items: start;
+}
+.в-пути__ряд > .vc-num { overflow-wrap: anywhere; }
+
+/* Несколько абзацев подряд внутри раскрывашки: между ними нужен
+   просвет, а маргинов у детей в этом дизайне не бывает — вертикаль
+   набирается gap у контейнера (правило 8 пакета). */
+.в-поля-столбиком {
+  display: flex; flex-direction: column; gap: var(--sp-2);
+  padding-top: var(--sp-2);
+}
+
+/* Договор ключа: подпись сверху, значение снизу, ряд с переносом.
+   Плитка «в-факты» тут не годится — она кладёт крупное число наверх,
+   а это правильно там, где число и есть суть («занято 3.4 ГБ»).
+   Здесь наоборот: «в файле на этой машине» не значит ничего, пока
+   не сказано, о чём это. Раскладка взята из макета экрана 10. */
+.в-договор {
+  display: flex; flex-wrap: wrap; gap: var(--sp-2) 32px;
+  padding-top: var(--sp-2);
+}
+.в-договор > div { display: flex; flex-direction: column; gap: 3px;
+                   min-width: 0; }
+.в-договор__что { font-size: var(--t-md); color: var(--ink-3); }
+.в-договор b { font-size: 14px; font-weight: 500; }
+.в-договор__ещё { font-size: var(--t-sm); color: var(--ink-3);
+                  max-width: 42ch; }
+
+/* Пара «слева имя, справа словами». Отдельно от «в-числа»: там правая
+   колонка моноширинная и прижата вправо — это для чисел. Фраза,
+   прижатая вправо и набранная моноширинным, читается как код
+   и переносится посреди себя. */
+.в-список-пар { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 6px var(--sp-4); }
+.в-список-пар > div { display: grid; grid-template-columns: auto 1fr;
+                      gap: var(--sp-2); align-items: baseline;
+                      font-size: var(--t-md); color: var(--ink-2); }
+
+/* Переключатель в ряду полей ростом с поле. В пакете он 34, поле 44,
+   и рядом это разнобой, который видно сразу. Само правило пакета
+   не тронуто: правится только то, что стоит внутри ряда полей. */
+.в-поля .vc-seg, .в-поля .vc-seg > button { height: var(--ctl-h); }
+.в-поля > .vc-btn { flex: 0 0 auto; }
+
+/* Подвал колонки: «Настройки» строкой с меткой состояния AI.
+   Не ссылка, а ряд — так в макете, и метка справа в ссылку
+   не встаёт. Один на все экраны, как и маршрут. */
+.в-подвал {
+  display: flex; align-items: center; gap: var(--sp-2);
+  width: 100%; text-align: left; cursor: pointer;
+  border: 0; border-top: 1px solid var(--line); background: none;
+  padding: 12px 10px 2px; margin-top: var(--sp-2);
+  font: 400 14px/1.2 var(--sans); color: var(--ink-2);
+}
+.в-подвал:hover { color: var(--ink); }
+/* Ссылка в подвале выглядит так же, как соседние строки-кнопки:
+   правило пакета `a` красило бы её акцентом и подчёркивало. */
+a.в-подвал { text-decoration: none; box-sizing: border-box; }
+/* «Quit Vertcut»: тише соседних строк — её нажимают раз за вечер. */
+.в-подвал--тихо { color: var(--ink-3); }
+.в-подвал__метка { display: flex; align-items: center; gap: 6px;
+                   font-size: var(--t-sm); color: var(--ink-3); }
+
+/* Зелёная точка «подключено». В пакете точки три и все три про планы
+   вертикалки — лицо, рука, стык. Брать `vc-dot--hand` только за то,
+   что он зелёный, значило бы завести цвет без смысла: через полгода
+   правка «рука теперь синяя» перекрасила бы состояние ключа. */
+.в-точка--good { background: var(--good-ink); }
+
+/* ── Предложения AI (экран 04) ──────────────────────────────────────── */
+
+.в-кандидаты { gap: var(--sp-3); }
+.в-кандидаты__ряд { display: flex; flex-direction: column; gap: var(--sp-2); }
+
+/* Карточка кандидата. Годная — кнопка: щелчок отмечает её фразы,
+   то есть делает ровно то же, что два щелчка по списку. Негодная —
+   не кнопка вовсе: ни руки-курсора, ни подсветки. Она не обещает
+   того, чего не сделает. */
+.в-кандидат {
+  display: flex; flex-direction: column; gap: 5px; text-align: left;
+  padding: 11px 12px; border: 1px solid var(--line);
+  border-radius: 6px; background: var(--surface);
+  font: 400 var(--t-md)/1.35 var(--sans); color: var(--ink);
+}
+button.в-кандидат { cursor: pointer; }
+button.в-кандидат:hover { border-color: var(--line-strong); }
+.в-кандидат b { font: 600 13.5px/1.3 var(--sans); }
+.в-кандидат__н { color: var(--ink-4); flex: 0 0 auto; }
+
+.в-кандидат--выбран {
+  border-color: var(--accent-hairline); background: var(--accent-bg);
+}
+.в-кандидат--выбран .в-кандидат__н { color: var(--accent); }
+
+/* По этому предложению вертикалка УЖЕ создана.
+   Цвета взяты у сигнала `good` — того же, которым говорит полоса
+   «получилось»: карточка отвечает на вопрос «это уже сделано?».
+   Метка «есть» рядом остаётся: цвет видно издалека, а слово говорит,
+   что именно с ней случилось. */
+.в-кандидат--есть {
+  border-color: var(--good-line); background: var(--good-bg);
+}
+button.в-кандидат--есть:hover { border-color: var(--good-ink); }
+.в-кандидат--есть b { color: var(--good-ink); }
+
+/* Негодное не прячется, но и не притворяется годным: подложка тише,
+   причина — цветом сигнала «внимание». */
+.в-кандидат--негоден { background: var(--surface-alt); }
+.в-кандидат--негоден b { font-weight: 500; color: var(--ink-3); }
+
+/* Жалоба строкой: «не годится», «язык разошёлся», «ответ оборвался».
+   Не полоса во всю ширину — она про экран целиком, а это про одну
+   строку рядом с тем, к чему относится. */
+.в-жалоба { color: var(--warn-ink); }
+
+/* Крестик «убрать это предложение». Не кнопка `vc-btn`: она бы стала
+   вторым действием карточки наравне с самой карточкой, а карточка
+   и есть главное действие — щелчок по ней отмечает фразы. */
+.в-кандидат__убрать {
+  flex: 0 0 auto; cursor: pointer; padding: 0 4px; line-height: 1;
+  color: var(--ink-4); font-size: 15px;
+}
+.в-кандидат__убрать:hover { color: var(--bad-ink); }
+
+/* Кнопка «Спросить» и её цена стоят вместе. Числа развели нарочно:
+   сколько будет стоить — вплотную к кнопке, которая это стоит;
+   сколько ушло в прошлый раз — внизу колонки, к итогу. Две
+   моношириные строки подряд читались кашей. */
+.в-спросить { display: flex; flex-direction: column; gap: var(--sp-2); }
+.в-спросить__ряд { display: flex; align-items: center; gap: var(--sp-2);
+                   flex-wrap: wrap; }
+.в-спросить__ряд > .vc-btn { white-space: nowrap; }
+
+/* Ряд полей: один промежуток на все ряды блока ключа.
+   
+   В макете экрана 10 промежутки в двух соседних рядах разные — 10
+   и 14 пикселей, — но ни того ни другого нет в шкале отступов самого
+   пакета (4 · 8 · 16 · 24 · 40). Правила системы важнее отдельных
+   значений: взят один шаг из шкалы, и ряды идут одним ритмом.
+   Разные промежутки в соседних рядах читаются как небрежность —
+   автор увидел это первым же взглядом. */
+
+/* Строка под рядом полей, прижатая к правому краю: там же, где
+   последнее поле ряда. Ссылка «показать список моделей» относится
+   к полю «Модель», а не к ряду целиком — по центру она читалась бы
+   как подпись ко всему ряду. */
+.в-поля__ниже { display: flex; justify-content: flex-end; }
+
+/* ── Свой список моделей ────────────────────────────────────────────── */
+/*
+  Родной `<select>` на macOS открывается ПОВЕРХ поля и рисует свою
+  стрелку системным шрифтом — ни то ни другое не настраивается.
+  Свой открывается ВНИЗ и В ПОТОКЕ: раздвигает карточку, а не наезжает
+  на неё. Это ещё и правило пакета — всплывающих слоёв в этом дизайне
+  нет вовсе, и тень допустима только под ними.
+*/
+.в-список { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+
+/* Закрытое поле выглядит ровно как поле ввода: тот же рост, та же
+   рамка, тот же радиус. Оно и есть поле — просто выбирается списком. */
+.в-список__поле {
+  display: flex; align-items: center; gap: var(--sp-2);
+  height: var(--ctl-h); padding: 0 12px; width: 100%;
+  border: 1px solid var(--line-strong); border-radius: var(--r-ctl);
+  background: var(--surface); color: var(--ink); cursor: pointer;
+  font: 400 14.5px/1 var(--mono); text-align: left;
+}
+.в-список__поле:hover { border-color: #c4bda8; }
+.в-список__поле--открыт { border-color: var(--accent); }
+.в-список__поле--открыт .в-стрелка { transform: rotate(180deg); }
+
+.в-стрелка { width: 12px; height: 12px; flex: 0 0 auto;
+             fill: none; stroke: var(--ink-3); stroke-width: 1.5;
+             stroke-linecap: round; stroke-linejoin: round; }
+
+.в-список__ряд {
+  display: flex; flex-direction: column;
+  border: 1px solid var(--line); border-radius: var(--r-ctl);
+  background: var(--surface); overflow: hidden;
+}
+.в-список__строка {
+  display: flex; align-items: center; gap: var(--sp-2);
+  padding: 9px 12px; border: 0; background: none; cursor: pointer;
+  text-align: left; font: 400 14.5px/1.3 var(--mono); color: var(--ink);
+}
+.в-список__строка + .в-список__строка { border-top: 1px solid var(--line); }
+.в-список__строка:hover { background: #f5f2e8; }
+.в-список__строка--эта { color: var(--accent-ink); }
+.в-список__имя { overflow: hidden; text-overflow: ellipsis;
+                 white-space: nowrap; }
+/* Место под галочку у невыбранных: иначе имена стоят лесенкой. */
+.в-список__пусто { width: 12px; flex: 0 0 auto; }
+.в-список__строка .в-галка { width: 12px; flex: 0 0 auto; }
+
+/* Карточка описания: главное — сама подпись.
+   
+   Сперва было наоборот: название вертикалки заголовком, крупным
+   и чёрным, а подпись под ним серой строкой. Но название — это
+   первые слова ролика, техническая примета; человек пришёл за тем,
+   что он СДЕЛАЛ. Техника уехала в мелкую строку под подписью. */
+.в-описание__текст {
+  margin: 0; font-size: 17px; line-height: 1.45; color: var(--ink);
+  cursor: text;
+}
+.в-описание__низ {
+  display: flex; align-items: center; gap: var(--sp-2);
+  flex-wrap: wrap; min-width: 0;
+}
+.в-описание__низ .vc-num { color: var(--ink-3); }
+
+/* «Описания нет» стоит на месте самой подписи: карточка держит одну
+   форму независимо от того, написано в ней что-нибудь или нет.
+   Ничто не должно менять высоту от того, что человек делает. */
+.в-описание__нет { color: var(--ink-4); cursor: default; }
+
+/* Карандаш у подписи: она правится по щелчку, а узнать об этом
+   можно было только наведя мышь — подсказка `title` молчит, пока
+   на неё не наткнулись, а на ощупь по тексту не щёлкают.
+
+   Нарисован линиями, как галка и стрелка, и по той же причине:
+   знака «✎» нет ни в одном из трёх шрифтов экрана, и браузер брал
+   бы его из системного — на чужой машине он выглядел бы чужим.
+
+   Бледный по умолчанию и темнеет под курсором: он подсказка,
+   а не кнопка, и спорить с самой подписью ему не за чем. */
+.в-карандаш {
+  width: 13px; height: 13px; display: inline-block; flex: 0 0 auto;
+  vertical-align: -1px; margin-left: 6px;
+  fill: none; stroke: var(--ink-4); stroke-width: 1.5;
+  stroke-linecap: round; stroke-linejoin: round;
+}
+.в-описание__текст:hover .в-карандаш { stroke: var(--ink-2); }

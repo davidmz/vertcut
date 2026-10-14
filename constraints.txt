@@ -1,0 +1,75 @@
+# EXACT VERSIONS OF EVERY LIBRARY VERTCUT INSTALLS
+#
+#   pip install . -c constraints.txt
+#
+# `pyproject.toml` says what Vertcut needs ("faster-whisper 1.1 or
+# newer"); this file says which versions were actually checked together,
+# including everything those pull in. pip takes from here only what it
+# needs on this computer: colorama, for example, comes only on Windows.
+#
+# WHY. On 29 September 2026 av 19 came out, and every fresh install of
+# Vertcut — the installer included — got it and could no longer read the
+# sound of any video. Nothing changed on our side: a library two steps
+# away did. With this file, a new release of anything changes nothing
+# for people until it has been checked here.
+#
+# WHO USES IT: the installer (it travels in the download next to it),
+# the install and update commands in README.md and INSTALL.md, and the
+# build machines. A weekly check installs the NEWEST versions without
+# this file and runs a real analysis and export; when it goes red,
+# something new has broken, and this file is what keeps people safe.
+#
+# HOW TO UPDATE: see CONTRIBUTING.md. In short — change the numbers,
+# run `python tools/pins.py`, push, and let the build machines go green.
+#
+# These are the versions the build machines installed on 9 October 2026,
+# when every check of the 0.1.0 release passed on them: Windows (the
+# installer and the README commands), Linux (the README commands) and
+# macOS (the downloaded installer, a real analysis and export).
+
+anyio==4.15.1
+av==18.1.0
+click==8.5.0
+colorama==0.4.6
+ctranslate2==4.8.2
+faster-whisper==1.2.1
+filelock==4.0.12
+flatbuffers==25.12.19
+fsspec==2026.9.0
+h11==0.16.0
+hf-xet==1.7.0
+httpcore2==2.13.1
+httpx2==2.13.1
+huggingface-hub==2.2.0
+idna==3.20
+packaging==26.3
+pillow==12.3.0
+protobuf==7.36.2
+pyyaml==6.0.3
+tokenizers==0.23.3
+tqdm==4.70.1
+truststore==0.10.4
+typing-extensions==4.16.0
+
+# numpy 2.5 needs Python 3.12 or newer. On Python 3.11 the last numpy
+# that supports it is used.
+numpy==2.5.3; python_version >= "3.12"
+numpy==2.4.6; python_version < "3.12"
+
+# onnxruntime runs the face detector. From 1.24 on it has no build for
+# Intel Macs at all; 1.23.2 is the last one, and it stops at Python 3.13.
+# So on an Intel Mac Vertcut needs Python 3.11–3.13 (the installer
+# brings 3.13). Intel Macs are not tested — see README.md.
+onnxruntime==1.31.0; sys_platform != "darwin" or platform_machine != "x86_64"
+onnxruntime==1.23.2; sys_platform == "darwin" and platform_machine == "x86_64"
+# ...and what that old onnxruntime pulls in; newer ones don't need these.
+coloredlogs==15.0.1; sys_platform == "darwin" and platform_machine == "x86_64"
+humanfriendly==10.0; sys_platform == "darwin" and platform_machine == "x86_64"
+mpmath==1.3.0; sys_platform == "darwin" and platform_machine == "x86_64"
+sympy==1.14.0; sys_platform == "darwin" and platform_machine == "x86_64"
+
+# Only for running Vertcut's tests (`pip install .[dev]`).
+iniconfig==2.3.0
+pluggy==1.6.0
+pygments==2.21.0
+pytest==9.1.1

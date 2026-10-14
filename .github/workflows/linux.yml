@@ -1,0 +1,53 @@
+# Путь «сам в терминале» из README — на чистом Ubuntu.
+#
+# ЗАЧЕМ. Linux обещан в README, а не запускался нигде: машины с ним
+# у разработки нет. Это задание отвечает на один вопрос — ставится ли
+# сервис командами README и доходит ли до `vertcut check`; живого видео
+# оно не режет.
+#
+# КОМАНДЫ ВЫНУТЫ ИЗ README (`tools/doc-commands.py`), а не переписаны —
+# та же причина, что у задания `terminal` в `windows.yml`. Подменяется
+# только адрес клона.
+
+name: Linux
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  terminal:
+    name: Сам в терминале — команды из README
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      # Строка из README для Debian/Ubuntu, слово в слово: её человек
+      # выполняет сам, потому что в ней sudo.
+      - name: Что человек ставит сам
+        run: |
+          sudo apt-get update -q
+          sudo apt install -y python3 python3-venv ffmpeg git
+          python3 --version
+
+      - name: Клон, установка, vertcut check, обновление
+        run: |
+          # Забранный код — без ветки (detached HEAD), и клон с него
+          # не смог бы `git pull`. У человека, клонирующего с GitHub, — main.
+          git -C "$GITHUB_WORKSPACE" checkout -q -B ci-checkout
+          run_block() {
+            python3 "$GITHUB_WORKSPACE/tools/doc-commands.py" "$GITHUB_WORKSPACE/README.md" "$@" > "$RUNNER_TEMP/block.sh"
+            echo "── $1"; cat "$RUNNER_TEMP/block.sh"
+            (cd "$PWD_FOR_BLOCK" && bash -euxo pipefail "$RUNNER_TEMP/block.sh")
+          }
+          PWD_FOR_BLOCK="$HOME" run_block clone-unix --repo "$GITHUB_WORKSPACE"
+          PWD_FOR_BLOCK="$GITHUB_WORKSPACE" run_block install-unix
+          PWD_FOR_BLOCK="$GITHUB_WORKSPACE" run_block update-unix
+          # Встало ли ровно то, что в файле точных версий (28-я сессия).
+          "$HOME/vertcut-app/.venv/bin/python" "$HOME/vertcut-app/tools/pins.py" --installed

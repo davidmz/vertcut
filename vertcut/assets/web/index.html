@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>vertcut</title>
+
+<!--
+  Порядок подключения не случаен и держится правилом пакета дизайна:
+  токены ПЕРВЫМИ, компоненты за ними, своё — последним.
+
+  tokens.css и components.css лежат здесь копией из пакета передачи,
+  байт в байт. Своих правок в них нет ни одной: разойдись они с пакетом
+  — и через полгода не сказать, где дизайн, а где чья-то поправка
+  «на глаз». Всё, чего в пакете нет, живёт в третьем файле.
+-->
+<link rel="stylesheet" href="/файлы/tokens.css">
+<link rel="stylesheet" href="/файлы/components.css">
+<link rel="stylesheet" href="/файлы/screen.css">
+</head>
+<body>
+
+<!--
+  Страница пустая нарочно: всё рисует JS, получив от сервера то, что
+  лежит на диске. Разметки «на всякий случай» здесь нет — она бы
+  мелькала перед человеком до первого ответа и читалась как поломка.
+-->
+<div id="экран"></div>
+
+<script type="module" src="/файлы/js/app.js"></script>
+</body>
+</html>

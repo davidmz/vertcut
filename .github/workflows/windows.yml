@@ -1,0 +1,420 @@
+# Сборка и проверка на живой Windows.
+#
+# ЗАЧЕМ ОНА ЕСТЬ. Windows-часть сервиса написана в шестой сессии
+# и до четырнадцатой не запускалась НИ РАЗУ: машины с Windows
+# у разработки нет.
+# Всё, что можно было проверить не запуская, проверено — и этого
+# оказалось мало: в командном файле стояла метка utf-8, которую
+# `cmd.exe` выполняет как команду, а путь внутри был русскими
+# буквами, которых он не читает. Обе беды нашлись глазами, а не
+# проверкой, и обе означали, что не запускается ничего.
+#
+# ЧТО ИМЕННО ЗДЕСЬ ПРОВЕРЯЕТСЯ. Не «архив распаковался», а дорога
+# человека: распаковал, нажал, дождался установки, получил
+# работающий сервис. Проверка, которая останавливается на распаковке,
+# отвечает на вопрос, которого никто не задавал.
+#
+# ПОЧЕМУ ЗАПУСКАЕТСЯ ИМЕННО `Vertcut.exe`. Правило проекта: проверять
+# надо тем способом, каким сервис запускает человек. Двойной щелчок
+# даёт другое окружение, чем команда в терминале, — на macOS это
+# стоило девятой сессии двух бед, которых не видел ни один из шестисот
+# тестов.
+
+name: Windows
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+  # Выпуск (`release.yml`) зовёт этот же файл с меткой: тогда сборки
+  # здесь нет, архив СКАЧИВАЕТСЯ из черновика выпуска — как его получит
+  # человек, — и проходит ту же установку. Второго описания установки
+  # не заводится.
+  workflow_call:
+    inputs:
+      release_tag:
+        type: string
+        required: false
+        default: ''
+
+# Машине нужно только прочесть код. Право записано здесь, а не держится
+# настройкой репозитория, которую можно поменять и забыть. Исключение —
+# одно задание `fetch-release` ниже, и только при выпуске.
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Собрать раздачу
+    if: inputs.release_tag == ''
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      # Сборка раздачи зовёт `pip wheel` — больше ей ничего не нужно.
+      - name: Собрать
+        run: |
+          python -m pip install --upgrade pip wheel
+          python install/build-release.py --system windows --out dist
+
+      # Проверка распаковкой входит в сборку и уже прошла выше.
+      # Здесь только показываем человеку, что вышло.
+      - name: Что вышло
+        run: |
+          Get-ChildItem dist
+          python -c "import zipfile; [print(' ', и) for и in zipfile.ZipFile('dist/Vertcut-windows.zip').namelist()]"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Vertcut-windows
+          path: dist/Vertcut-windows.zip
+          if-no-files-found: error
+
+  # ТОЛЬКО ПРИ ВЫПУСКЕ: скачать архив из черновика так, как скачает
+  # человек, и сверить его сумму с SHA256SUMS.txt оттуда же.
+  #
+  # ПРАВО ПИСАТЬ — ЗДЕСЬ ОДНОМ, И ВОТ ПОЧЕМУ ОТДЕЛЬНЫМ ЗАДАНИЕМ.
+  # Черновик выпуска виден только с правом писать. Вызванный процесс
+  # может права лишь сузить, а не расширить: верхнее `contents: read`
+  # этого файла срезало бы право, данное выпуском, и `gh release download`
+  # не увидел бы черновика. Право выдано заданию, которое только
+  # скачивает и сверяет и при обычном толчке не запускается вовсе;
+  # установка ниже по-прежнему с правом читать. Архив дальше едет
+  # артефактом под своим именем: имя `Vertcut-windows` в прогоне выпуска
+  # уже занято его же сборкой.
+  #
+  # Шаг — без русских букв (PowerShell; правило оболочки 5.1).
+  fetch-release:
+    name: Скачать из черновика выпуска
+    if: inputs.release_tag != ''
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download and check the sum
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.release_tag }}
+        run: |
+          gh release download $env:TAG --repo $env:GITHUB_REPOSITORY `
+            --pattern 'Vertcut-windows.zip' --pattern 'SHA256SUMS.txt' --dir archive
+          if ($LASTEXITCODE -ne 0) { throw "could not download Vertcut-windows.zip from release $env:TAG" }
+          $line = Get-Content archive/SHA256SUMS.txt | Where-Object { $_ -match 'Vertcut-windows\.zip$' }
+          if (-not $line) { throw 'SHA256SUMS.txt has no line for Vertcut-windows.zip' }
+          $expected = ($line -split '\s+')[0].ToLower()
+          $actual = (Get-FileHash archive/Vertcut-windows.zip -Algorithm SHA256).Hash.ToLower()
+          Write-Host "expected $expected"
+          Write-Host "actual   $actual"
+          if ($expected -ne $actual) { throw "Vertcut-windows.zip from the release does not match SHA256SUMS.txt" }
+          Remove-Item archive/SHA256SUMS.txt
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Vertcut-windows-from-release
+          path: archive/Vertcut-windows.zip
+          if-no-files-found: error
+
+  install:
+    name: Поставить и пройти путь
+    needs: [build, fetch-release]
+    # Одно из двух: собранное здесь (толчок) или скачанное (выпуск).
+    if: ${{ !cancelled() && (needs.build.result == 'success' || needs.fetch-release.result == 'success') }}
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.release_tag == '' && 'Vertcut-windows' || 'Vertcut-windows-from-release' }}
+          path: archive
+
+      # Распаковываем тем же, чем распакует человек: правой кнопкой
+      # «Извлечь все» — это и есть Expand-Archive.
+      - name: Распаковать
+        run: Expand-Archive archive/Vertcut-windows.zip -DestinationPath unpacked
+
+      # Двойной щелчок. Ярлык поднимает установку, ждёт её и остаётся
+      # жить вместе с сервисом — поэтому ждём его не здесь, а ниже,
+      # по ответу самого сервиса.
+      - name: Нажать Vertcut
+        run: |
+          $exe = Resolve-Path unpacked/Vertcut/Vertcut.exe
+          Start-Process -FilePath $exe -WorkingDirectory (Split-Path $exe)
+          Write-Host "нажато: $exe"
+
+      # Около 800 МБ: питон, ffmpeg и модель, которая слышит речь.
+      # Ждём ответа сервиса, а не «прошло N минут»: ответ — это факт,
+      # а время — догадка.
+      #
+      # **И всё это время говорим, чем заняты.** Первый заход молчал
+      # полчаса и кончался строкой «сервис не ответил» — то есть ровно
+      # тем отказом, после которого чинят наугад. Теперь каждую минуту
+      # видно, сколько уже скачано и что сказал журнал; а если ярлык
+      # уже написал, что установка не удалась, ждать больше нечего —
+      # падаем сразу и с его же словами.
+      - name: Дождаться, пока сервис ответит
+        run: |
+          $Program  = Join-Path $env:LOCALAPPDATA 'vertcut'
+          $Settings = Join-Path $env:USERPROFILE '.vertcut'
+          $Logs     = Join-Path $Settings 'logs'
+          $Py       = Join-Path $Program 'python\python.exe'
+          $срок = (Get-Date).AddMinutes(25)
+          $ответ = $null
+          while ((Get-Date) -lt $срок) {
+            if (Test-Path $Py) {
+              try {
+                $ответ = Invoke-RestMethod -TimeoutSec 5 `
+                  -Uri 'http://127.0.0.1:7864/апи/здоровье'
+                break
+              } catch { }
+            }
+            $сказано = ''
+            if (Test-Path $Logs) {
+              $последний = Get-ChildItem $Logs -Filter *.log |
+                Sort-Object LastWriteTime | Select-Object -Last 1
+              if ($последний) {
+                $сказано = (Get-Content $последний.FullName -Tail 1)
+              }
+            }
+            $сколько = 0
+            foreach ($п in @($Program, "$Program.new")) {
+              if (Test-Path $п) {
+                $сколько += (Get-ChildItem $п -Recurse -File -ErrorAction SilentlyContinue |
+                             Measure-Object Length -Sum).Sum
+              }
+            }
+            Write-Host ("{0:mm\:ss} · поставлено {1:n0} МБ · {2}" -f `
+              ($срок - (Get-Date)), ($сколько / 1MB), $сказано)
+            # Слова ярлыка — английские с 23-й сессии (`launcher.ps1`).
+            if ($сказано -match 'installation failed|didn.t start|no Python at') {
+              throw "ярлык сказал: $сказано"
+            }
+            Start-Sleep -Seconds 30
+          }
+          if (-not $ответ) { throw 'сервис не ответил за двадцать пять минут' }
+          Write-Host ("сервис: " + $ответ.сервис + ", процесс " + $ответ.pid)
+          "VERTCUT_PID=$($ответ.pid)" | Out-File $env:GITHUB_ENV -Append
+
+      # ЧТО ВИДИТ ЧЕЛОВЕК — глазами Edge, браузера, который стоит
+      # на всякой Windows. README раздачи — целиком; страница хода
+      # к этому моменту уже уводит на сервис, и снимок показывает,
+      # куда она ушла. Окна SmartScreen здесь не будет: архив скачан
+      # не браузером, отметки «из интернета» на нём нет.
+      #
+      # У ШАГА СВОЙ СРОК (27-я сессия). Однажды невидимый Edge не вышел
+      # вовсе, и `Start-Process -Wait` держал прогон 12+ минут, пока его
+      # не отменили руками. `-Wait` ждёт и всех потомков Edge, а они
+      # бывают долгоживущими. Теперь ждём только сам процесс, не дольше
+      # SHOT_SECONDS на снимок; не вышел — гасим всё его дерево и всех
+      # Edge с нашим профилем, пишем, КАКАЯ страница повисла, и шаг
+      # краснеет. `timeout-minutes` — запас на случай, если повиснет
+      # само гашение.
+      #
+      # `continue-on-error`: снимки — свидетельство для глаз, а не то,
+      # что здесь проверяется. Повисший Edge не должен прятать ответ
+      # на главный вопрос — поставилось ли и прошли ли проверки. Шаг
+      # остаётся красным (и с пометкой ::error:: в сводке прогона),
+      # а прогон идёт дальше.
+      #
+      # Строки шага — без русских букв: сообщения его видны в сводке,
+      # а имена в нём латиницей по тому же правилу, что у оболочки 5.1.
+      - name: Снимки того, что видит человек
+        if: always()
+        continue-on-error: true
+        timeout-minutes: 6
+        env:
+          SHOT_SECONDS: '60'
+        run: |
+          $edge = Join-Path ${env:ProgramFiles(x86)} 'Microsoft\Edge\Application\msedge.exe'
+          $profileDir = Join-Path $env:RUNNER_TEMP 'edge'
+          New-Item -ItemType Directory -Force -Path shots | Out-Null
+          $outDir = (Resolve-Path shots).Path
+          $pages = @(
+            @((Resolve-Path unpacked/Vertcut/README.html).Path, 'readme.png', '900,4200'),
+            @((Join-Path $env:USERPROFILE '.vertcut\install\progress.html'), 'progress.png', '1100,900')
+          )
+          function Stop-OurEdge {
+            Get-CimInstance Win32_Process -Filter "Name='msedge.exe'" |
+              Where-Object { $_.CommandLine -like "*$profileDir*" } |
+              ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
+          }
+          $hung = @()
+          foreach ($page in $pages) {
+            if (-not (Test-Path $page[0])) { Write-Host "no file: $($page[0])"; continue }
+            $url = ([System.Uri]$page[0]).AbsoluteUri
+            $edgeProcess = Start-Process -PassThru -FilePath $edge -ArgumentList @(
+              '--headless=new', '--disable-gpu', '--hide-scrollbars',
+              "--user-data-dir=$profileDir", "--window-size=$($page[2])",
+              '--virtual-time-budget=10000',
+              "--screenshot=$(Join-Path $outDir $page[1])", $url)
+            if (-not $edgeProcess.WaitForExit([int]$env:SHOT_SECONDS * 1000)) {
+              & taskkill /PID $edgeProcess.Id /T /F 2>&1 | Out-Null
+              $hung += $page[1]
+              Write-Host "::error::Edge did not finish $($page[1]) ($url) in $($env:SHOT_SECONDS) s - killed it, no screenshot"
+            }
+            Stop-OurEdge
+          }
+          Get-ChildItem shots
+          if ($hung) { throw "Edge hung on: $($hung -join ', ')" }
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: shots
+          path: shots
+          if-no-files-found: warn
+
+      # Своими словами сервиса: чего ему не хватает. Здесь же видно,
+      # нашёлся ли ffmpeg — та самая беда, которую на macOS поймал
+      # автор глазами, а шестьсот проверок не увидели.
+      - name: Что сервис говорит про своё окружение
+        run: |
+          $Py = Join-Path $env:LOCALAPPDATA 'vertcut\python\python.exe'
+          $env:PYTHONUTF8 = '1'
+          & $Py -m vertcut check
+          if ($LASTEXITCODE -ne 0) { throw 'окружению чего-то не хватает' }
+
+
+      # ПЕРЕД ПРОВЕРКАМИ СЕРВИС ОСТАНАВЛИВАЕТСЯ, И ЭТО НЕ УБОРКА.
+      # Проверки экрана поднимают свой сервер и спрашивают его же —
+      # а живой сервис держит тот самый порт, и двадцать проверок
+      # стучались в него вместо своего. Ответ приходил верный,
+      # но от чужого.
+      #
+      # Номер процесса берётся у самого сервиса: он его и назвал.
+      - name: Остановить сервис
+        run: |
+          if ($env:VERTCUT_PID) {
+            Stop-Process -Id $env:VERTCUT_PID -Force -ErrorAction SilentlyContinue
+            Write-Host "остановлен процесс $env:VERTCUT_PID"
+          }
+          Start-Sleep -Seconds 2
+
+      # А теперь вся механика — тем самым питоном, который поставился,
+      # и тем самым ffmpeg, который приехал вместе с ним. Проверки
+      # проекта и есть его определение слова «работает».
+      - name: Прогнать проверки поставленным питоном
+        run: |
+          $Py = Join-Path $env:LOCALAPPDATA 'vertcut\python\python.exe'
+          $env:PYTHONUTF8 = '1'
+          # pytest — по тому же файлу точных версий, что и сервис.
+          & $Py -m pip install --quiet pytest -c constraints.txt
+          # Встало ли ровно то, что в файле (28-я сессия): пометки
+          # «только Windows» читаются по-настоящему только здесь.
+          & $Py tools/pins.py --installed
+          if ($LASTEXITCODE -ne 0) { throw 'установщик поставил не те версии' }
+          & $Py -m pytest -q
+          if ($LASTEXITCODE -ne 0) { throw 'проверки не прошли на Windows' }
+
+      # Журнал и страница хода — единственное, что остаётся после
+      # неудачи. Лежат они рядом с настройками, а не внутри программы,
+      # именно затем, чтобы пережить её.
+      - name: Забрать журнал
+        if: always()
+        run: |
+          $Settings = Join-Path $env:USERPROFILE '.vertcut'
+          New-Item -ItemType Directory -Force -Path следы | Out-Null
+          if (Test-Path $Settings) {
+            Copy-Item -Recurse -Force (Join-Path $Settings 'logs') следы `
+              -ErrorAction SilentlyContinue
+            Copy-Item -Recurse -Force (Join-Path $Settings 'install') следы `
+              -ErrorAction SilentlyContinue
+          }
+          Get-ChildItem -Recurse следы | Select-Object FullName, Length
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Журнал запуска
+          path: следы
+          if-no-files-found: warn
+
+  # Путь «сам в терминале» из README — на чистой Windows.
+  #
+  # КОМАНДЫ НЕ ПЕРЕПИСАНЫ СЮДА, А ВЫНУТЫ ИЗ README
+  # (`tools/doc-commands.py`): проверка, которая держит свою копию,
+  # однажды проверит не то, что человек скопирует. Подменяется одно —
+  # адрес клона: пока репозиторий закрыт, анонимно его не склонировать,
+  # и клонируем то, что машина уже забрала.
+  #
+  # ЧТО У ЧЕЛОВЕКА УЖЕ ЕСТЬ ДО README. Питон — с python.org, обычным
+  # установщиком (его же ставит `winget install Python.Python.3.13`):
+  # с ним приезжает `py`, на который опирается README. ffmpeg — через
+  # choco; у человека он winget-ом, но путь тот же — ffmpeg в PATH.
+  #
+  # ОБОЛОЧКА — Windows PowerShell 5.1 (`shell: powershell`), а не pwsh:
+  # её открывает человек, у которого ничего не ставилось сверху.
+  # Она читает файл шага как ANSI, поэтому в шагах ниже НИ ОДНОЙ русской
+  # буквы — ни в именах, ни в строках (первый запуск упал на `$адрес`).
+  terminal:
+    name: Сам в терминале — команды из README
+    if: inputs.release_tag == ''
+    runs-on: windows-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: powershell
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Питон, как его ставит человек
+        run: |
+          $url = 'https://www.python.org/ftp/python/3.13.15/python-3.13.15-amd64.exe'
+          Invoke-WebRequest $url -OutFile python-setup.exe
+          Start-Process python-setup.exe -Wait -ArgumentList `
+            '/quiet', 'InstallAllUsers=1', 'PrependPath=1', 'Include_launcher=1'
+          & py --version
+          if ($LASTEXITCODE -ne 0) { throw 'py did not appear' }
+
+      - name: ffmpeg в PATH
+        run: |
+          choco install ffmpeg -y --no-progress
+          # The whole output is read: cutting the pipe after one line
+          # made ffmpeg exit with an error now and then.
+          $version = & ffmpeg -version
+          if ($LASTEXITCODE -ne 0) { throw 'ffmpeg does not run' }
+          $version[0]
+
+      # Строка за строкой, как их вставил бы человек; упавшая строка
+      # роняет шаг с её же текстом. `update-windows` — тоже из README:
+      # обновление — второй путь, по которому человек пойдёт сам.
+      - name: Клон, установка, vertcut check, обновление
+        run: |
+          # The checkout has no branch (detached HEAD): a clone of it
+          # couldn't `git pull`. A person cloning from GitHub gets main.
+          git -C $env:GITHUB_WORKSPACE checkout -q -B ci-checkout
+          $tool = Join-Path $env:GITHUB_WORKSPACE 'tools\doc-commands.py'
+          $readme = Join-Path $env:GITHUB_WORKSPACE 'README.md'
+          function Run-Block($name, $repo) {
+            $args2 = @($tool, $readme, $name)
+            if ($repo) { $args2 += @('--repo', $repo) }
+            $text = & py @args2
+            if ($LASTEXITCODE -ne 0) { throw "no block $name" }
+            foreach ($line in ($text -split "`n")) {
+              if (-not $line.Trim()) { continue }
+              Write-Host "PS> $line"
+              $global:LASTEXITCODE = 0
+              Invoke-Expression $line
+              if ($LASTEXITCODE -ne 0) { throw "failed ($LASTEXITCODE): $line" }
+            }
+          }
+          $repo = $env:GITHUB_WORKSPACE
+          Push-Location $HOME
+          Run-Block 'clone-windows' $repo
+          Pop-Location
+          Push-Location $env:GITHUB_WORKSPACE
+          Run-Block 'install-windows'
+          Pop-Location
+          Push-Location $env:GITHUB_WORKSPACE
+          Run-Block 'update-windows'
+          Pop-Location
+          # The same versions as in constraints.txt, as installed.
+          $app = Join-Path $HOME 'vertcut-app'
+          & (Join-Path $app '.venv\Scripts\python.exe') (Join-Path $app 'tools\pins.py') --installed
+          if ($LASTEXITCODE -ne 0) { throw 'README commands installed other versions than constraints.txt' }

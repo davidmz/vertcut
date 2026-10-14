@@ -1,0 +1,176 @@
+# Еженедельно: САМЫЕ СВЕЖИЕ версии библиотек — БЕЗ файла точных версий —
+# и настоящий путь на macOS, Windows и Linux.
+#
+# ЗАЧЕМ. Люди ставят Vertcut по `constraints.txt`: новая версия чего
+# угодно до них не доходит, пока её не проверили. Но рано или поздно
+# файл придётся обновлять, и узнать, что свежее сломано, надо ДО этого,
+# а не после. Ровно так 29 сентября 2026 вышел av 19 и молча сломал
+# разбор у каждой свежей установки; заметили это через десять дней,
+# живым разбором (27-я сессия).
+#
+# ЧТО ДЕЛАЕТ. Чистая машина, питон 3.11 и 3.14 (края вилки), `pip install`
+# без файла — то есть всё самое новое, — и дальше то, что делает человек:
+# `vertcut check`, проверки проекта, РАЗБОР короткого видео с речью
+# (распознавание, укладка, склейки, рамки), выбор куска и СБОРКА с пятью
+# заслонами. Видео одно на всех: его делает первое задание — голос
+# espeak-ng, три сцены, 48 секунд.
+#
+# УПАЛО — красный прогон; GitHub пишет письмо автору. В сводке прогона —
+# на какой системе и каком шаге, и чем свежие версии отличаются от файла.
+# Людей это не задевает: они ставят по файлу. Что делать дальше —
+# CONTRIBUTING.md, раздел про версии библиотек.
+#
+# GitHub ВЫКЛЮЧАЕТ расписание в открытом репозитории, где 60 дней
+# не было ни одного толчка, — и присылает об этом письмо заранее.
+# Включить обратно — кнопка на странице Actions.
+
+name: Newest libraries
+
+on:
+  schedule:
+    # Понедельник, 06:00 UTC (09:00 по Москве).
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  video:
+    name: Видео с речью
+    runs-on: ubuntu-latest
+    steps:
+      - name: Голос и три сцены
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q espeak-ng ffmpeg
+          espeak-ng -v en-us -s 150 -w speech.wav "Every week, this check installs the newest version of every library. Then it analyzes this short video and exports a clip from it. The video has three scenes and one voice. The voice is reading these sentences slowly and clearly. If the newest libraries break the analysis or the export, the check turns red. People who install Vertcut are not affected by that. They install the exact versions from the constraints file. The author gets an email from GitHub and decides what to do next."
+          ffmpeg -loglevel error -y \
+            -f lavfi -i testsrc2=s=1280x720:r=30:d=16 \
+            -f lavfi -i smptebars=s=1280x720:r=30:d=16 \
+            -f lavfi -i mandelbrot=s=1280x720:r=30 \
+            -i speech.wav \
+            -filter_complex "[2:v]trim=duration=16,setpts=PTS-STARTPTS[m];[0:v][1:v][m]concat=n=3:v=1:a=0[v];[3:a]apad[a]" \
+            -map "[v]" -map "[a]" -t 48 -c:v libx264 -pix_fmt yuv420p -c:a aac speech.mp4
+          ffprobe -v error -show_entries format=duration -of csv=p=0 speech.mp4
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: speech
+          path: speech.mp4
+          if-no-files-found: error
+
+  newest:
+    name: ${{ matrix.os }}, Python ${{ matrix.python }}
+    needs: video
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    strategy:
+      # Одна упавшая система не отменяет остальных: письмо должно сказать,
+      # где сломано, а не «где-то».
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest, ubuntu-latest]
+        python: ['3.11', '3.14']
+    defaults:
+      run:
+        shell: bash
+    env:
+      PYTHONUTF8: '1'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: speech
+          path: ${{ runner.temp }}/video
+
+      - name: ffmpeg
+        run: |
+          case "$RUNNER_OS" in
+            macOS)   brew install ffmpeg ;;
+            Windows) choco install ffmpeg -y --no-progress ;;
+            Linux)   sudo apt-get update -q && sudo apt-get install -y -q ffmpeg ;;
+          esac
+          ffmpeg -version | head -1
+
+      - id: install
+        name: Свежие библиотеки — без файла
+        run: |
+          python -m venv .venv
+          if [ "$RUNNER_OS" = Windows ]; then BIN=.venv/Scripts; else BIN=.venv/bin; fi
+          "$BIN/python" -m pip install --upgrade pip
+          "$BIN/python" -m pip install ".[dev]"
+          echo "$PWD/$BIN" >> "$GITHUB_PATH"
+          # Разборы и настройки — в своей папке, вне рабочей копии.
+          echo "VERTCUT_HOME=$RUNNER_TEMP/vertcut-home" >> "$GITHUB_ENV"
+
+      - id: diff
+        name: Чем свежее отличается от файла
+        # Не проверка, а сведения: отличаться — её работа.
+        run: python tools/pins.py --installed | tee "$RUNNER_TEMP/diff.txt" || true
+
+      - id: check
+        name: vertcut check
+        run: vertcut check
+
+      - id: tests
+        name: Проверки проекта
+        run: python -m pytest -q
+
+      - id: ingest
+        name: Разбор видео с речью
+        run: |
+          vertcut ingest "$RUNNER_TEMP/video/speech.mp4"
+          vertcut phrases speech
+
+      - id: pick
+        name: Выбрать кусок
+        run: vertcut pick speech --start 0:01 --end 0:30
+
+      - id: render
+        name: Собрать и пройти пять заслонов
+        run: |
+          vertcut render speech
+          vertcut cuts speech
+
+      - name: Сводка
+        if: always()
+        run: |
+          {
+            echo "### ${{ matrix.os }}, Python ${{ matrix.python }}"
+            echo
+            echo "| step | result |"
+            echo "|---|---|"
+            echo "| install the newest libraries | ${{ steps.install.outcome }} |"
+            echo "| vertcut check | ${{ steps.check.outcome }} |"
+            echo "| tests | ${{ steps.tests.outcome }} |"
+            echo "| analysis of a video with speech | ${{ steps.ingest.outcome }} |"
+            echo "| pick a segment | ${{ steps.pick.outcome }} |"
+            echo "| export with the five checks | ${{ steps.render.outcome }} |"
+            echo
+            echo "Newer than constraints.txt:"
+            echo
+            echo '```'
+            cat "$RUNNER_TEMP/diff.txt" 2>/dev/null || echo "(not measured)"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Что сломано
+        if: failure()
+        run: |
+          echo "::error title=The newest libraries broke Vertcut (${{ matrix.os }}, Python ${{ matrix.python }})::People are not affected: they install from constraints.txt. The summary of this run shows which step failed and which libraries are newer than the file. Don't update constraints.txt until this is green."
+          exit 1
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: logs-${{ matrix.os }}-${{ matrix.python }}
+          path: |
+            ${{ runner.temp }}/vertcut-home/speech/*.log
+            ${{ runner.temp }}/vertcut-home/.settings/logs
+          if-no-files-found: ignore

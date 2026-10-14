@@ -1,0 +1,127 @@
+# WHERE THE INSTALLER GETS WHAT THIS COMPUTER DOESN'T HAVE
+#
+# Every address here says where it came from, how it's checked, and
+# what we pay for it.
+#
+# WHY THIS IS PLAIN TEXT AND NOT CODE. The Python address is needed by
+# two readers: the shell script that downloads Python, and Python, which
+# downloads everything else. The shell can't read Python code, Python
+# doesn't read shell scripts — and a number written in two places will
+# one day drift apart, quietly. So there's one list and two readers, in
+# a format that awk, Python and a person can all read.
+#
+# Rows: words separated by spaces. Empty lines and lines starting with
+# # are skipped.
+#
+# EVERYTHING THAT GETS DOWNLOADED IS CHECKED. Programs arrive here that
+# will be run, and "downloaded and ran it" without checking means taking
+# someone else's server at its word. The checksums were taken by hand on
+# 3 September 2026: downloaded, unpacked, computed. The Mac ones match
+# the ones published on the builder's website.
+#
+# IF A CHECKSUM DOESN'T MATCH, THE INSTALL STOPS AND SAYS SO IN WORDS.
+# Not "probably an update": an update can't be told apart from
+# tampering, and that's for a person to decide, not the program.
+
+# ── SELF-CONTAINED PYTHON ─────────────────────────────────────────────
+#
+# Most people don't have the right Python version, and asking them to
+# install one means exactly the terminal session this installer exists
+# to avoid.
+#
+# We use a build that doesn't install anywhere but simply sits in a
+# folder: unpack it and it works. It's the same build uv — today's most
+# widely used Python package installer — uses, so it's nothing exotic.
+#
+# Version 3.13: libraries for the very newest Python arrive last, and
+# this build has been run end to end. Raise it only after checking that
+# all the libraries install on the new version.
+# The "stripped" build has no debug symbols: 25 MB instead of 60, and
+# those symbols are only for people debugging Python itself.
+#
+# Python's license (PSF) is inside the unpacked folder.
+
+python darwin arm64 https://github.com/astral-sh/python-build-standalone/releases/download/20260901/cpython-3.13.15+20260901-aarch64-apple-darwin-install_only_stripped.tar.gz d3904bd6a072246e07aa0bdadee9a14e80521e42a943c0848059feb16a2816dc
+python darwin x86_64 https://github.com/astral-sh/python-build-standalone/releases/download/20260901/cpython-3.13.15+20260901-x86_64-apple-darwin-install_only_stripped.tar.gz f712a9143c8a5d248438ec7921a0b48d548bca4f1337d33c690d28c2d0504137
+python windows x86_64 https://github.com/astral-sh/python-build-standalone/releases/download/20260901/cpython-3.13.15+20260901-x86_64-pc-windows-msvc-install_only_stripped.tar.gz 63d263ab0162f34a241a56dc5b283c22d6e131f5516117e6a921350c69ba7d4f
+
+# ── FFMPEG ────────────────────────────────────────────────────────────
+#
+# FIRST WE LOOK WHETHER IT'S ALREADY ON THE COMPUTER, and only then
+# download it. People with Homebrew usually have it, and a second copy
+# would mean 45 MB for nothing plus the question "which of the two is
+# being used".
+#
+# VERSIONS. Vertcut was measured on ffmpeg 8.1.2; the downloads are 9.0
+# (macOS Apple Silicon), 8.0 (macOS Intel) and 9.0.1 (Windows). For 9.0
+# this was CHECKED, not hoped for: the whole path — analysis, picking
+# a segment, export — was run on the downloaded 9.0 build, with the same
+# clip length and the same check results as on 8.1.2. The Windows 9.0.1
+# build is run by the build machine: Vertcut's tests run on it. The Intel
+# 8.0 build HAS NEVER BEEN RUN ANYWHERE — only its checksum was checked.
+# This matters: ffmpeg has changed how seeking behaves between versions
+# before, and that once cost a lot of work.
+#
+# LICENSE. These builds are under the GPL: they include the x264
+# encoder, which is GPL. WE DO NOT DISTRIBUTE FFMPEG — your computer
+# downloads it from the website of whoever built it. Vertcut calls ffmpeg
+# as a separate program, so its GPL wouldn't apply to our code even if we
+# put ffmpeg in the archive. Distributing it would oblige us to something
+# else: shipping the license text and the SOURCE CODE of exactly that
+# build — for every system and every update. By not distributing it we
+# don't carry that, the archive stays small, and anyone who already has
+# ffmpeg doesn't get a second copy. The license text is put next to the
+# program file.
+#
+# WHAT WE PAY. The Mac builds keep the same file name when they're
+# updated, so after an update the checksum won't match. That's not a
+# breakage but a conversation: Vertcut will say that the file at that
+# address has changed and suggest either getting a newer Vertcut or
+# installing ffmpeg yourself.
+#
+# The Windows build has its version number in the file name, and the
+# release is tagged with it too. Its archive holds both programs and the
+# license text.
+#
+# THE ADDRESS HAS DIED HERE BEFORE, AND THAT'S WHY IT'S DIFFERENT NOW.
+# It used to point at a "nightly" build, and the builder deletes those as
+# new ones come out: on 20 September 2026 it returned 404, meaning the
+# Windows install didn't work for anyone at all. The build machine found
+# it — the first thing to actually install Vertcut on a real Windows.
+#
+# Now it's a build with a PERMANENT release tag — a version number, not
+# a date. Those releases aren't deleted, and both addresses — Mac and
+# Windows — are of the same kind now: a version, not "latest".
+#
+# The Mac checksums are of the PROGRAM FILES inside the archive, not of
+# the archive: those are what the builder publishes, and those are what
+# actually runs.
+
+ffmpeg darwin arm64 ffmpeg https://www.osxexperts.net/ffmpeg9arm.zip 591260c945d0eef150e3bf82b0ef988bd36a9cecc18ff05d6679617159f0a95e
+ffmpeg darwin arm64 ffprobe https://www.osxexperts.net/ffprobe9arm.zip e11c17e8200b3ee4c4c186d245e2b4053f01d56957336c1817fca0b997469106
+ffmpeg darwin x86_64 ffmpeg https://www.osxexperts.net/ffmpeg80intel.zip df3f1e3facdc1ae0ad0bd898cdfb072fbc9641bf47b11f172844525a05db8d11
+ffmpeg darwin x86_64 ffprobe https://www.osxexperts.net/ffprobe80intel.zip 5228e651e2bd67bb55819b27f6138351587b16d2b87446007bf35b7cf930d891
+ffmpeg windows x86_64 archive https://github.com/GyanD/codexffmpeg/releases/download/9.0.1/ffmpeg-9.0.1-essentials_build.zip fec81ae03971d9dd4be3ebe02e263bd2ec1d789483f931bdba5f5715e65da2e9
+
+# ── HOW MUCH IN TOTAL ─────────────────────────────────────────────────
+#
+# The numbers are told to the person BEFORE starting, not discovered
+# halfway. Measured on 3 September 2026, macOS Apple Silicon:
+#
+#   Python                    25 MB download, 298 MB on disk
+#   libraries (via pip)      ~200 MB download (included in that 298)
+#   ffmpeg and ffprobe        45 MB download,  99 MB on disk
+#   speech recognition model 464 MB download and the same on disk
+#
+# THE "ON DISK" NUMBER HAD TO GO UP AFTER A REAL RUN. It was first 820,
+# an estimate; a real install took 883, so the promise was SMALLER than
+# the truth. That's the worse of the two mistakes: someone with an
+# almost full disk would hear "there's enough space" and then get a
+# failure halfway through. 1000 it is: the real 883 plus room for the
+# temporary files pip creates along the way.
+#
+# If ffmpeg is already installed, it's 99 MB less on disk and 45 MB
+# less to download.
+
+size download 780
+size disk 1000
