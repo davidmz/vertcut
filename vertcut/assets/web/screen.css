@@ -618,7 +618,6 @@ html, body { height: 100%; }
   background: var(--accent-bg-2); color: var(--ink);
   border-left: 2px solid var(--accent); padding-left: 14px;
 }
-.в-строка[data-не-влезает] { background: var(--warn-bg); }
 /* Таймкод — техническая мелочь, и места ему отведено как мелочи.
    Девяносто шесть пикселей на две строки съедали треть колонки,
    а колонка тут для текста субтитра и кнопок под ним. Показывается
@@ -629,7 +628,9 @@ html, body { height: 100%; }
   color: var(--ink-4); white-space: nowrap; padding-top: 3px;
 }
 .в-строка__текст { flex: 1; min-width: 0; }
-.в-строка__метка { font: 400 var(--t-xs)/1.4 var(--mono); color: var(--warn-ink); }
+/* Серая, не жёлтая: и «2 pages», и «edited» — сведения, а не беды.
+   Жёлтым «doesn't fit» первые люди читали «субтитр обрежется». */
+.в-строка__метка { font: 400 var(--t-xs)/1.4 var(--mono); color: var(--ink-3); }
 .в-правка { display: flex; flex-direction: column; gap: var(--sp-2); flex: 1; }
 .в-правка textarea { width: 100%; }
 

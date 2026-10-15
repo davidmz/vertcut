@@ -1,7 +1,16 @@
 # Vertcut @VERSION@
 
-The first release. Vertcut cuts long videos into vertical clips with
-subtitles, on your own computer, in your browser.
+Vertcut cuts long videos into vertical clips with subtitles, on your
+own computer, in your browser.
+
+## What's new in @VERSION@
+
+- Long phrases are no longer marked in yellow as if the subtitles
+  would be cut off. They never were: a phrase too long for one page is
+  shown page by page, and no words are lost. The screen now says so in
+  a short grey note.
+- A long phrase is now split into evenly sized pages, so a page with a
+  single leftover word no longer happens.
 
 ## How to install
 

@@ -189,7 +189,8 @@
 | готовые виды | **Presets** | `looks.yaml`: `name`, `about`, `cost`, `settings` |
 | виды: обычный / крупный / на обводке / узкий | **Standard / Large / Outline / Narrow** | `standard / large / outline / narrow` |
 | цена вида (фраза не влезает в одну страницу) | **8–23% of phrases need two pages** | `cost: {essay, interview, english}` |
-| не влезает в страницу (у фразы) | **doesn't fit: 3 lines** | |
+| фраза в несколько страниц (у фразы) | **2 pages**; у выбранной — **Shown on 2 pages, one after another** | не *doesn't fit*: жёлтое «не влезает» читали как «обрежется» |
+| сколько фраз перелистывается (у вертикалки) | **5 of 21 phrases take more than one page … No words are lost** | серым, не жалобой |
 | правлено рукой (текст фразы) | **edited** | |
 | строк · знаков (счётчик у фразы) | **2 lines · 14 and 16 characters** | |
 | список фраз ролика в редакторе | **Phrases** | не *lines*: в списке фразы, а строки — внутри |
